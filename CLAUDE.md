@@ -13,4 +13,7 @@
 |---|---|
 | `uv run python -m pytest` | テスト実行 |
 | `uv run ruff check .` | Lint |
+| `uv run ruff check --fix .` | Lint (自動修正) |
 | `uv run ruff format .` | フォーマット |
+| `uv run ty check` | 型チェック |
+| `uv run pre-commit run --all-files` | 全フック実行 |
