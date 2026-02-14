@@ -11,14 +11,7 @@
 
 | コマンド | 説明 |
 |---|---|
-| `make build-dev` | 開発用 Docker イメージをビルド |
-| `make build-prod` | 本番用 Docker イメージをビルド |
-| `make build` | 開発用・本番用の両方をビルド |
-| `make run-dev` | 開発コンテナを起動（バインドマウント） |
-| `make run-prod` | 本番コンテナを起動 |
-| `make test` | テスト実行（pytest） |
-| `make lint` | Lint（ruff check） |
-| `make lint-fix` | Lint 自動修正（ruff check --fix） |
-| `make format` | フォーマット（ruff format） |
-| `make shell` | 開発コンテナのシェルを開く |
-| `make help` | 利用可能なコマンド一覧を表示 |
+| `uv run pytest` | テスト実行 |
+| `uv run ruff check .` | Lint |
+| `uv run ruff check --fix .` | Lint 自動修正 |
+| `uv run ruff format .` | フォーマット |

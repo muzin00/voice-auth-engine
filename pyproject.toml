@@ -1,10 +1,14 @@
 [project]
 name = "voice-auth-engine"
 version = "0.1.0"
-description = "Add your description here"
+description = "Voice authentication engine"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
@@ -17,7 +21,7 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov --cov-report=term-missing"
+addopts = "--cov=voice_auth_engine --cov-report=term-missing"
 
 [tool.ruff]
 line-length = 100
