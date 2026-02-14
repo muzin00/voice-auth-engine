@@ -15,3 +15,4 @@
 | `uv run ruff check .` | Lint |
 | `uv run ruff check --fix .` | Lint 自動修正 |
 | `uv run ruff format .` | フォーマット |
+| `uv run python scripts/download_models.py` | モデルダウンロード |
