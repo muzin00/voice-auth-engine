@@ -1,7 +1,5 @@
-from main import main
+from voice_auth_engine import hello
 
 
-def test_main(capsys):
-    main()
-    captured = capsys.readouterr()
-    assert captured.out == "Hello from voice-auth-engine!\n"
+def test_hello():
+    assert hello() == "Hello from voice-auth-engine!"
