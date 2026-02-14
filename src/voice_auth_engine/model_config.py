@@ -35,4 +35,22 @@ campplus_config = ModelConfig(
     dest=Path("3dspeaker") / "3dspeaker_speech_campplus_sv_zh_en_16k-common_advanced.onnx",
 )
 
-DEFAULT_MODELS: list[ModelConfig] = [silero_vad_config, sense_voice_config, campplus_config]
+kokoro_tts_config = ModelConfig(
+    name="Kokoro TTS (INT8)",
+    url="https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.int8.onnx",
+    dest=Path("kokoro-tts") / "kokoro-v1.0.int8.onnx",
+)
+
+kokoro_voices_config = ModelConfig(
+    name="Kokoro TTS Voices",
+    url="https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin",
+    dest=Path("kokoro-tts") / "voices-v1.0.bin",
+)
+
+DEFAULT_MODELS: list[ModelConfig] = [
+    silero_vad_config,
+    sense_voice_config,
+    campplus_config,
+    kokoro_tts_config,
+    kokoro_voices_config,
+]

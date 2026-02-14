@@ -16,10 +16,13 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "kokoro-onnx",
+    "misaki[ja]",
     "pre-commit>=4.5.1",
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
     "ruff>=0.15.1",
+    "soundfile",
     "ty>=0.0.17",
 ]
 
