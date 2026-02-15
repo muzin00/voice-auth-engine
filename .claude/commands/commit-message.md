@@ -12,3 +12,4 @@
 
 - 1行目: 変更の要約（Conventional Commits 形式: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:` など）
 - 必要に応じて空行の後に補足説明を追加
+- **すべて英語で記述する**
