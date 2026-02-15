@@ -34,3 +34,19 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
       - run: uv run ty check
+
+  pr-size:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR additions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          additions=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files \
+            --paginate --jq '[.[] | select(.filename != "uv.lock") | .additions] | add // 0')
+          echo "Total additions (excluding uv.lock): $additions"
+          if [ "$additions" -gt 500 ]; then
+            echo "::error::PR has $additions added lines (limit: 500). Please split into smaller PRs."
+            exit 1
+          fi
