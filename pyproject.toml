@@ -5,6 +5,8 @@ description = "Voice authentication engine"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "av",
+    "numpy",
     "sherpa-onnx",
     "sherpa-onnx-core",
     "tqdm>=4.67.3",
