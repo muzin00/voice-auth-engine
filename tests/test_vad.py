@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 from voice_auth_engine.audio_preprocessor import AudioData
-from voice_auth_engine.model_config import silero_vad_config
 from voice_auth_engine.vad import (
     SpeechSegment,
     SpeechSegments,
@@ -16,11 +15,12 @@ from voice_auth_engine.vad import (
 )
 
 from .audio_factory import generate_silence_samples, generate_voiced_samples, make_audio_data
+from .conftest import requires_vad_model
 
 SAMPLE_RATE = 16000
 
 
-@pytest.mark.skipif(not silero_vad_config.path.exists(), reason="Silero VAD model not found")
+@requires_vad_model
 class TestDetectSpeech:
     """detect_speech 関数のテスト。"""
 
@@ -85,7 +85,7 @@ class TestDetectSpeech:
             detect_speech(voiced_audio, model_path="/nonexistent/model.onnx")
 
 
-@pytest.mark.skipif(not silero_vad_config.path.exists(), reason="Silero VAD model not found")
+@requires_vad_model
 class TestExtractSpeech:
     """extract_speech 関数のテスト。"""
 
