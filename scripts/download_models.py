@@ -1,10 +1,7 @@
 """Download model files for sherpa-onnx."""
 
-from pathlib import Path
-
+from voice_auth_engine.model_config import MODELS_DIR
 from voice_auth_engine.model_downloader import ModelDownloader
-
-MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 
 
 def main() -> None:
