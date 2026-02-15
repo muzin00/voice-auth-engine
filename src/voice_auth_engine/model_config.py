@@ -3,6 +3,9 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+MODELS_DIR = PROJECT_ROOT / "models"
+
 
 @dataclass(frozen=True)
 class ModelConfig:
@@ -13,6 +16,11 @@ class ModelConfig:
     dest: Path
     archive: bool = False
     inner_dir: str | None = None
+
+    @property
+    def path(self) -> Path:
+        """モデルファイルの絶対パスを返す。"""
+        return MODELS_DIR / self.dest
 
 
 silero_vad_config = ModelConfig(
