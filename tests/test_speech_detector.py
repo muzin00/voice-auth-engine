@@ -1,4 +1,4 @@
-"""VAD モジュールのテスト。"""
+"""speech_detector モジュールのテスト。"""
 
 from __future__ import annotations
 
@@ -6,21 +6,21 @@ import numpy as np
 import pytest
 
 from voice_auth_engine.audio_preprocessor import AudioData
-from voice_auth_engine.vad import (
+from voice_auth_engine.speech_detector import (
+    SpeechDetectorModelLoadError,
     SpeechSegment,
     SpeechSegments,
-    VadModelLoadError,
     detect_speech,
     extract_speech,
 )
 
 from .audio_factory import generate_silence_samples, generate_voiced_samples, make_audio_data
-from .conftest import requires_vad_model
+from .conftest import requires_silero_vad_model
 
 SAMPLE_RATE = 16000
 
 
-@requires_vad_model
+@requires_silero_vad_model
 class TestDetectSpeech:
     """detect_speech 関数のテスト。"""
 
@@ -80,12 +80,12 @@ class TestDetectSpeech:
             assert seg.end_sample <= len(voiced_audio.samples)
 
     def test_model_path_not_found(self, voiced_audio: AudioData) -> None:
-        """不正パスで VadModelLoadError。"""
-        with pytest.raises(VadModelLoadError):
+        """不正パスで SpeechDetectorModelLoadError。"""
+        with pytest.raises(SpeechDetectorModelLoadError):
             detect_speech(voiced_audio, model_path="/nonexistent/model.onnx")
 
 
-@requires_vad_model
+@requires_silero_vad_model
 class TestExtractSpeech:
     """extract_speech 関数のテスト。"""
 

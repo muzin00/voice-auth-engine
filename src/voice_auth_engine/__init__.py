@@ -12,20 +12,20 @@ from voice_auth_engine.embedding_extractor import (
     EmbeddingModelLoadError,
     extract_embedding,
 )
+from voice_auth_engine.speech_detector import (
+    SpeechDetectorError,
+    SpeechDetectorModelLoadError,
+    SpeechSegment,
+    SpeechSegments,
+    detect_speech,
+    extract_speech,
+)
 from voice_auth_engine.speech_recognizer import (
     RecognitionError,
     RecognizerModelLoadError,
     SpeechRecognizerError,
     TranscriptionResult,
     transcribe,
-)
-from voice_auth_engine.vad import (
-    SpeechSegment,
-    SpeechSegments,
-    VadError,
-    VadModelLoadError,
-    detect_speech,
-    extract_speech,
 )
 
 __all__ = [
@@ -43,8 +43,8 @@ __all__ = [
     "SpeechSegments",
     "TranscriptionResult",
     "UnsupportedFormatError",
-    "VadError",
-    "VadModelLoadError",
+    "SpeechDetectorError",
+    "SpeechDetectorModelLoadError",
     "detect_speech",
     "extract_embedding",
     "extract_speech",

@@ -17,7 +17,7 @@ from .audio_factory import (
     make_audio_data,
 )
 
-requires_vad_model = pytest.mark.skipif(
+requires_silero_vad_model = pytest.mark.skipif(
     not silero_vad_config.path.exists(), reason="Silero VAD model not found"
 )
 

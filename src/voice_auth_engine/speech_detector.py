@@ -12,12 +12,12 @@ from voice_auth_engine.audio_preprocessor import AudioData
 from voice_auth_engine.model_config import silero_vad_config
 
 
-class VadError(Exception):
-    """VAD 処理の基底例外。"""
+class SpeechDetectorError(Exception):
+    """音声区間検出の基底例外。"""
 
 
-class VadModelLoadError(VadError):
-    """VAD モデルの読み込み失敗。"""
+class SpeechDetectorModelLoadError(SpeechDetectorError):
+    """音声区間検出モデルの読み込み失敗。"""
 
 
 class SpeechSegment(NamedTuple):
@@ -57,14 +57,14 @@ def detect_speech(
         SpeechSegments: 検出された発話区間のリストと元の音声データ。
 
     Raises:
-        VadModelLoadError: モデルの読み込みに失敗した場合。
+        SpeechDetectorModelLoadError: モデルの読み込みに失敗した場合。
     """
     if model_path is None:
         model_path = silero_vad_config.path
     model_path = Path(model_path)
 
     if not model_path.exists():
-        raise VadModelLoadError(f"VAD モデルファイルが見つかりません: {model_path}")
+        raise SpeechDetectorModelLoadError(f"VAD モデルファイルが見つかりません: {model_path}")
 
     config = sherpa_onnx.VadModelConfig(
         silero_vad=sherpa_onnx.SileroVadModelConfig(
@@ -79,7 +79,7 @@ def detect_speech(
     try:
         vad = sherpa_onnx.VoiceActivityDetector(config)
     except Exception as exc:
-        raise VadModelLoadError(f"VAD モデルの読み込みに失敗しました: {exc}") from exc
+        raise SpeechDetectorModelLoadError(f"VAD モデルの読み込みに失敗しました: {exc}") from exc
 
     if len(audio.samples) == 0:
         return SpeechSegments(segments=[], audio=audio)
