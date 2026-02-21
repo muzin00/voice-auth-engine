@@ -12,6 +12,7 @@ from voice_auth_engine.embedding_extractor import (
     EmbeddingModelLoadError,
     extract_embedding,
 )
+from voice_auth_engine.math import cosine_similarity
 from voice_auth_engine.passphrase_validator import (
     EmptyPassphraseError,
     InsufficientPhonemeError,
@@ -19,6 +20,14 @@ from voice_auth_engine.passphrase_validator import (
     PassphraseValidationError,
     analyze_passphrase,
     validate_passphrase,
+)
+from voice_auth_engine.speaker_verifier import (
+    InsufficientSpeechError,
+    PassphraseEnroller,
+    PassphraseVerifier,
+    PassphraseVerifierError,
+    VerificationResult,
+    check_speech_duration,
 )
 from voice_auth_engine.speech_detector import (
     SpeechDetectorError,
@@ -46,10 +55,14 @@ __all__ = [
     "EmbeddingModelLoadError",
     "EmptyPassphraseError",
     "InsufficientPhonemeError",
+    "InsufficientSpeechError",
     "PassphraseInfo",
     "PassphraseValidationError",
     "RecognitionError",
     "RecognizerModelLoadError",
+    "PassphraseEnroller",
+    "PassphraseVerifier",
+    "PassphraseVerifierError",
     "SpeechDetectorError",
     "SpeechDetectorModelLoadError",
     "SpeechRecognizerError",
@@ -57,7 +70,10 @@ __all__ = [
     "SpeechSegments",
     "TranscriptionResult",
     "UnsupportedFormatError",
+    "VerificationResult",
     "analyze_passphrase",
+    "check_speech_duration",
+    "cosine_similarity",
     "detect_speech",
     "extract_embedding",
     "extract_speech",
