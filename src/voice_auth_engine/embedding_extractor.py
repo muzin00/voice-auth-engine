@@ -70,11 +70,8 @@ def extract_embedding(
     if len(audio.samples) < min_samples:
         raise EmbeddingExtractionError("音声が短すぎて埋め込みを抽出できません")
 
-    # int16 → float32 正規化
-    samples_f32 = audio.samples.astype(np.float32) / 32768.0
-
     stream = extractor.create_stream()
-    stream.accept_waveform(audio.sample_rate, samples_f32)
+    stream.accept_waveform(audio.sample_rate, audio.samples_f32)
     stream.input_finished()
 
     if not extractor.is_ready(stream):
