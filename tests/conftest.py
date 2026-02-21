@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from voice_auth_engine.audio_preprocessor import AudioData
-from voice_auth_engine.model_config import sense_voice_config, silero_vad_config
+from voice_auth_engine.model_config import campplus_config, sense_voice_config, silero_vad_config
 
 from .audio_factory import (
     generate_audio_file,
@@ -23,6 +23,10 @@ requires_vad_model = pytest.mark.skipif(
 
 requires_sense_voice_model = pytest.mark.skipif(
     not sense_voice_config.path.exists(), reason="SenseVoice model not found"
+)
+
+requires_campplus_model = pytest.mark.skipif(
+    not campplus_config.path.exists(), reason="CAM++ model not found"
 )
 
 
@@ -94,3 +98,9 @@ def silence_audio() -> AudioData:
 def empty_audio() -> AudioData:
     """空の AudioData。"""
     return make_audio_data(np.array([], dtype=np.int16))
+
+
+@pytest.fixture
+def voiced_audio_3s() -> AudioData:
+    """3秒の発話風 AudioData。"""
+    return make_audio_data(generate_voiced_samples(duration=3.0))

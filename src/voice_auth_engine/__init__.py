@@ -5,6 +5,13 @@ from voice_auth_engine.audio_preprocessor import (
     UnsupportedFormatError,
     load_audio,
 )
+from voice_auth_engine.embedding_extractor import (
+    Embedding,
+    EmbeddingExtractionError,
+    EmbeddingExtractorError,
+    EmbeddingModelLoadError,
+    extract_embedding,
+)
 from voice_auth_engine.speech_recognizer import (
     RecognitionError,
     RecognizerModelLoadError,
@@ -25,6 +32,10 @@ __all__ = [
     "AudioData",
     "AudioDecodeError",
     "AudioPreprocessError",
+    "Embedding",
+    "EmbeddingExtractionError",
+    "EmbeddingExtractorError",
+    "EmbeddingModelLoadError",
     "RecognitionError",
     "RecognizerModelLoadError",
     "SpeechRecognizerError",
@@ -35,6 +46,7 @@ __all__ = [
     "VadError",
     "VadModelLoadError",
     "detect_speech",
+    "extract_embedding",
     "extract_speech",
     "load_audio",
     "transcribe",
