@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from voice_auth_engine.audio_preprocessor import AudioData
-from voice_auth_engine.model_config import silero_vad_config
+from voice_auth_engine.model_config import sense_voice_config, silero_vad_config
 
 from .audio_factory import (
     generate_audio_file,
@@ -19,6 +19,10 @@ from .audio_factory import (
 
 requires_vad_model = pytest.mark.skipif(
     not silero_vad_config.path.exists(), reason="Silero VAD model not found"
+)
+
+requires_sense_voice_model = pytest.mark.skipif(
+    not sense_voice_config.path.exists(), reason="SenseVoice model not found"
 )
 
 

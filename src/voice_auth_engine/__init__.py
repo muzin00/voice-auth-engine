@@ -5,6 +5,13 @@ from voice_auth_engine.audio_preprocessor import (
     UnsupportedFormatError,
     load_audio,
 )
+from voice_auth_engine.speech_recognizer import (
+    RecognitionError,
+    RecognizerModelLoadError,
+    SpeechRecognizerError,
+    TranscriptionResult,
+    transcribe,
+)
 from voice_auth_engine.vad import (
     SpeechSegment,
     SpeechSegments,
@@ -18,12 +25,17 @@ __all__ = [
     "AudioData",
     "AudioDecodeError",
     "AudioPreprocessError",
+    "RecognitionError",
+    "RecognizerModelLoadError",
+    "SpeechRecognizerError",
     "SpeechSegment",
     "SpeechSegments",
+    "TranscriptionResult",
     "UnsupportedFormatError",
     "VadError",
     "VadModelLoadError",
     "detect_speech",
     "extract_speech",
     "load_audio",
+    "transcribe",
 ]
