@@ -84,10 +84,7 @@ def detect_speech(
     if len(audio.samples) == 0:
         return SpeechSegments(segments=[], audio=audio)
 
-    # int16 → float32 正規化 (Silero VAD は [-1, 1] の float32 を期待)
-    samples_f32 = audio.samples.astype(np.float32) / 32768.0
-
-    vad.accept_waveform(samples_f32)
+    vad.accept_waveform(audio.samples_f32)
     vad.flush()
 
     segments: list[SpeechSegment] = []

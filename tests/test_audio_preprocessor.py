@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from voice_auth_engine.audio_preprocessor import (
+    AudioData,
     AudioDecodeError,
     UnsupportedFormatError,
     load_audio,
@@ -97,3 +98,12 @@ class TestLoadAudio:
         upper.write_bytes(src.read_bytes())
         result = load_audio(upper)
         assert len(result.samples) > 0
+
+
+class TestAudioData:
+    """AudioData の samples_f32 プロパティのテスト。"""
+
+    def test_samples_f32_dtype(self) -> None:
+        """float32 の配列を返す。"""
+        audio = AudioData(samples=np.array([0, 16384, -16384], dtype=np.int16), sample_rate=16000)
+        assert audio.samples_f32.dtype == np.float32

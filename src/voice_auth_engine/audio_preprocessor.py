@@ -32,6 +32,11 @@ class AudioData(NamedTuple):
     samples: npt.NDArray[np.int16]  # 16kHz モノラル int16
     sample_rate: int  # 常に 16000
 
+    @property
+    def samples_f32(self) -> npt.NDArray[np.float32]:
+        """int16 サンプルを [-1.0, 1.0] の float32 に正規化して返す。"""
+        return self.samples.astype(np.float32) / 32768.0
+
 
 def load_audio(path: str | Path) -> AudioData:
     """音声ファイルを読み込み、16kHz モノラル int16 に変換する。

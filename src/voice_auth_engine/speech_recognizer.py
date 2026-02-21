@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import NamedTuple
 
-import numpy as np
 import sherpa_onnx
 
 from voice_auth_engine.audio_preprocessor import AudioData
@@ -81,11 +80,8 @@ def transcribe(
     except Exception as exc:
         raise RecognizerModelLoadError(f"SenseVoice モデルの読み込みに失敗しました: {exc}") from exc
 
-    # int16 → float32 正規化
-    samples_f32 = audio.samples.astype(np.float32) / 32768.0
-
     stream = recognizer.create_stream()
-    stream.accept_waveform(audio.sample_rate, samples_f32)
+    stream.accept_waveform(audio.sample_rate, audio.samples_f32)
     recognizer.decode_stream(stream)
 
     return TranscriptionResult(text=stream.result.text.strip())
