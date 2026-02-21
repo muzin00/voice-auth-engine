@@ -21,7 +21,7 @@ from voice_auth_engine.passphrase_validator import (
     analyze_passphrase,
     validate_passphrase,
 )
-from voice_auth_engine.speaker_verifier import (
+from voice_auth_engine.passphrase_verifier import (
     InsufficientSpeechError,
     PassphraseEnroller,
     PassphraseVerifier,
