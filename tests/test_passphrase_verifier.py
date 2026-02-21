@@ -1,4 +1,4 @@
-"""speaker_verifier モジュールのテスト。"""
+"""passphrase_verifier モジュールのテスト。"""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from voice_auth_engine.speaker_verifier import (
+from voice_auth_engine.passphrase_verifier import (
     InsufficientSpeechError,
     PassphraseEnroller,
     PassphraseVerifier,
@@ -47,7 +47,7 @@ class TestCheckSpeechDuration:
 class TestPassphraseEnroller:
     """PassphraseEnroller のテスト。"""
 
-    @patch("voice_auth_engine.speaker_verifier.extract_embedding")
+    @patch("voice_auth_engine.passphrase_verifier.extract_embedding")
     def test_add_sample_increments_count(self, mock_extract: MagicMock) -> None:
         """add_sample 後に sample_count が増加する。"""
         mock_extract.return_value = make_embedding([1.0, 0.0, 0.0])
@@ -58,7 +58,7 @@ class TestPassphraseEnroller:
         enroller.add_sample(audio)
         assert enroller.sample_count == 2
 
-    @patch("voice_auth_engine.speaker_verifier.extract_embedding")
+    @patch("voice_auth_engine.passphrase_verifier.extract_embedding")
     def test_enroll_returns_verifier(self, mock_extract: MagicMock) -> None:
         """enroll() が PassphraseVerifier を返す。"""
         mock_extract.return_value = make_embedding([1.0, 0.0, 0.0])
@@ -67,7 +67,7 @@ class TestPassphraseEnroller:
         verifier = enroller.enroll()
         assert isinstance(verifier, PassphraseVerifier)
 
-    @patch("voice_auth_engine.speaker_verifier.extract_embedding")
+    @patch("voice_auth_engine.passphrase_verifier.extract_embedding")
     def test_enroll_averages_embeddings(self, mock_extract: MagicMock) -> None:
         """複数サンプルの平均ベクトルで Verifier が生成される。"""
         mock_extract.side_effect = [
@@ -92,9 +92,9 @@ class TestPassphraseEnroller:
         enroller = PassphraseEnroller(min_unique_phonemes=None)
         assert enroller.sample_count == 0
 
-    @patch("voice_auth_engine.speaker_verifier.extract_embedding")
-    @patch("voice_auth_engine.speaker_verifier.validate_passphrase")
-    @patch("voice_auth_engine.speaker_verifier.transcribe")
+    @patch("voice_auth_engine.passphrase_verifier.extract_embedding")
+    @patch("voice_auth_engine.passphrase_verifier.validate_passphrase")
+    @patch("voice_auth_engine.passphrase_verifier.transcribe")
     def test_phoneme_check_disabled(
         self,
         mock_transcribe: MagicMock,
@@ -112,7 +112,7 @@ class TestPassphraseEnroller:
 class TestPassphraseVerifier:
     """PassphraseVerifier のテスト。"""
 
-    @patch("voice_auth_engine.speaker_verifier.extract_embedding")
+    @patch("voice_auth_engine.passphrase_verifier.extract_embedding")
     def test_verify_accepted(self, mock_extract: MagicMock) -> None:
         """類似度 ≥ threshold で accepted=True。"""
         enrolled = make_embedding([1.0, 0.0, 0.0])
@@ -127,7 +127,7 @@ class TestPassphraseVerifier:
         assert result.accepted is True
         assert result.score == pytest.approx(1.0)
 
-    @patch("voice_auth_engine.speaker_verifier.extract_embedding")
+    @patch("voice_auth_engine.passphrase_verifier.extract_embedding")
     def test_verify_rejected(self, mock_extract: MagicMock) -> None:
         """類似度 < threshold で accepted=False。"""
         enrolled = make_embedding([1.0, 0.0, 0.0])
@@ -142,7 +142,7 @@ class TestPassphraseVerifier:
         assert result.accepted is False
         assert result.score == pytest.approx(0.0)
 
-    @patch("voice_auth_engine.speaker_verifier.extract_embedding")
+    @patch("voice_auth_engine.passphrase_verifier.extract_embedding")
     def test_verify_returns_score(self, mock_extract: MagicMock) -> None:
         """スコアが [-1.0, 1.0] の範囲。"""
         enrolled = make_embedding([1.0, 0.0, 0.0])
@@ -165,9 +165,9 @@ class TestPassphraseVerifier:
         )
         assert verifier.threshold == 0.7
 
-    @patch("voice_auth_engine.speaker_verifier.extract_embedding")
-    @patch("voice_auth_engine.speaker_verifier.validate_passphrase")
-    @patch("voice_auth_engine.speaker_verifier.transcribe")
+    @patch("voice_auth_engine.passphrase_verifier.extract_embedding")
+    @patch("voice_auth_engine.passphrase_verifier.validate_passphrase")
+    @patch("voice_auth_engine.passphrase_verifier.transcribe")
     def test_phoneme_check_disabled(
         self,
         mock_transcribe: MagicMock,
