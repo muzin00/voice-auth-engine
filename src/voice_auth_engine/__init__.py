@@ -4,6 +4,7 @@ from voice_auth_engine.audio_preprocessor import (
     AudioPreprocessError,
     UnsupportedFormatError,
     load_audio,
+    load_audio_bytes,
 )
 from voice_auth_engine.embedding_extractor import (
     Embedding,
@@ -78,6 +79,7 @@ __all__ = [
     "extract_embedding",
     "extract_speech",
     "load_audio",
+    "load_audio_bytes",
     "transcribe",
     "validate_passphrase",
 ]

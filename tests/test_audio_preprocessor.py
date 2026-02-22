@@ -12,6 +12,7 @@ from voice_auth_engine.audio_preprocessor import (
     AudioDecodeError,
     UnsupportedFormatError,
     load_audio,
+    load_audio_bytes,
 )
 
 from .audio_factory import generate_audio_file
@@ -98,6 +99,35 @@ class TestLoadAudio:
         upper.write_bytes(src.read_bytes())
         result = load_audio(upper)
         assert len(result.samples) > 0
+
+
+class TestLoadAudioBytes:
+    """load_audio_bytes 関数のテスト。"""
+
+    def test_decodes_wav_bytes(self, wav_16k_mono: Path) -> None:
+        """WAV bytes をデコードできる。"""
+        data = wav_16k_mono.read_bytes()
+        result = load_audio_bytes(data)
+        assert result.sample_rate == 16000
+        assert result.samples.dtype == np.int16
+        assert len(result.samples) > 0
+
+    def test_decodes_with_explicit_format(self, wav_16k_mono: Path) -> None:
+        """format 明示指定でデコードできる。"""
+        data = wav_16k_mono.read_bytes()
+        result = load_audio_bytes(data, format="wav")
+        assert result.sample_rate == 16000
+        assert len(result.samples) > 0
+
+    def test_raises_on_empty_bytes(self) -> None:
+        """空 bytes で AudioDecodeError。"""
+        with pytest.raises(AudioDecodeError):
+            load_audio_bytes(b"")
+
+    def test_raises_on_invalid_bytes(self) -> None:
+        """不正 bytes で AudioDecodeError。"""
+        with pytest.raises(AudioDecodeError):
+            load_audio_bytes(b"not a real audio file")
 
 
 class TestAudioData:

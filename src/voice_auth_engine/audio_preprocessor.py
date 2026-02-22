@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 from pathlib import Path
 from typing import NamedTuple
 
@@ -61,8 +62,28 @@ def load_audio(path: str | Path) -> AudioData:
     if ext not in SUPPORTED_EXTENSIONS:
         raise UnsupportedFormatError(f"非対応の音声フォーマットです: {ext}")
 
+    return load_audio_bytes(path.read_bytes())
+
+
+def load_audio_bytes(data: bytes, *, format: str | None = None) -> AudioData:
+    """bytes から音声をデコードし、16kHz モノラル int16 に変換する。
+
+    Args:
+        data: 音声データのバイト列。
+        format: コンテナフォーマット名（例: "wav", "mp3"）。
+            None の場合は PyAV が自動判別する。
+
+    Returns:
+        AudioData: 変換済みの音声データ。
+
+    Raises:
+        AudioDecodeError: デコードに失敗した場合。
+    """
+    if not data:
+        raise AudioDecodeError("音声データが空です")
+
     try:
-        with av.open(str(path)) as container:
+        with av.open(io.BytesIO(data), mode="r", format=format) as container:
             audio_stream = container.streams.audio[0]
             resampler = av.AudioResampler(format="s16", layout="mono", rate=TARGET_SAMPLE_RATE)
 
@@ -80,7 +101,7 @@ def load_audio(path: str | Path) -> AudioData:
                 frames.append(array)
 
     except Exception as exc:
-        raise AudioDecodeError(f"音声ファイルのデコードに失敗しました: {exc}") from exc
+        raise AudioDecodeError(f"音声データのデコードに失敗しました: {exc}") from exc
 
     if not frames:
         raise AudioDecodeError("音声データが空です")
