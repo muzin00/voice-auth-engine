@@ -13,7 +13,37 @@ from voice_auth_engine.embedding_extractor import (
     extract_embedding,
 )
 
+from .audio_factory import make_embedding
 from .conftest import requires_campplus_model
+
+
+class TestEmbeddingSerialization:
+    """Embedding の to_bytes / from_bytes のテスト。"""
+
+    def test_roundtrip(self) -> None:
+        """シリアライズ→デシリアライズで値が一致する。"""
+        original = make_embedding([1.0, 2.0, 3.0])
+        restored = Embedding.from_bytes(original.to_bytes())
+        np.testing.assert_array_equal(original.values, restored.values)
+
+    def test_dtype_preserved(self) -> None:
+        """復元後も dtype が float32 である。"""
+        original = make_embedding([1.0, 0.5, -0.5])
+        restored = Embedding.from_bytes(original.to_bytes())
+        assert restored.values.dtype == np.float32
+
+    def test_empty_bytes_returns_empty_array(self) -> None:
+        """空バイトで空配列が返る。"""
+        restored = Embedding.from_bytes(b"")
+        assert len(restored.values) == 0
+        assert restored.values.dtype == np.float32
+
+    def test_restored_is_writable(self) -> None:
+        """from_bytes で復元した配列が書き込み可能である。"""
+        original = make_embedding([1.0, 2.0, 3.0])
+        restored = Embedding.from_bytes(original.to_bytes())
+        restored.values[0] = 99.0
+        assert restored.values[0] == 99.0
 
 
 class TestExtractEmbedding:
