@@ -1,6 +1,7 @@
 from voice_auth_engine.audio_preprocessor import (
     AudioData,
     AudioDecodeError,
+    AudioInput,
     AudioPreprocessError,
     decode_audio,
     load_audio,
@@ -23,6 +24,12 @@ from voice_auth_engine.embedding_extractor import (
     extract_embedding,
 )
 from voice_auth_engine.math import cosine_similarity
+from voice_auth_engine.passphrase_auth import (
+    PassphraseAuth,
+    PassphraseAuthEnroller,
+    PassphraseAuthError,
+    PassphraseAuthVerifier,
+)
 from voice_auth_engine.passphrase_validator import (
     EmptyPassphraseError,
     InsufficientPhonemeError,
@@ -58,6 +65,7 @@ from voice_auth_engine.speech_recognizer import (
 __all__ = [
     "AudioData",
     "AudioDecodeError",
+    "AudioInput",
     "AudioPreprocessError",
     "AudioValidationError",
     "DEFAULT_MIN_SPEECH_SECONDS",
@@ -70,13 +78,17 @@ __all__ = [
     "InsufficientDurationError",
     "InsufficientPhonemeError",
     "InsufficientSpeechError",
+    "PassphraseAuth",
+    "PassphraseAuthError",
+    "PassphraseAuthEnroller",
+    "PassphraseAuthVerifier",
+    "PassphraseEnroller",
     "PassphraseInfo",
     "PassphraseValidationError",
-    "RecognitionError",
-    "RecognizerModelLoadError",
-    "PassphraseEnroller",
     "PassphraseVerifier",
     "PassphraseVerifierError",
+    "RecognitionError",
+    "RecognizerModelLoadError",
     "SpeechDetectorError",
     "SpeechDetectorModelLoadError",
     "SpeechRecognizerError",

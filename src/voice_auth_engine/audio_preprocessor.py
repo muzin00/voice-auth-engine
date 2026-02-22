@@ -35,15 +35,15 @@ class AudioData(NamedTuple):
         return self.samples.astype(np.float32) / 32768.0
 
 
-AudioInput = bytes | str | Path
-"""音声入力の型エイリアス。bytes / ファイルパス を受け付ける。"""
+AudioInput = AudioData | bytes | str | Path
+"""音声入力の型エイリアス。AudioData / bytes / ファイルパス を受け付ける。"""
 
 
 def load_audio(audio: AudioInput) -> AudioData:
     """AudioInput を 16kHz モノラル int16 の AudioData に変換する。
 
     Args:
-        audio: 音声入力。bytes / str / Path を受け付ける。
+        audio: 音声入力。AudioData / bytes / str / Path を受け付ける。
 
     Returns:
         AudioData: 変換済みの音声データ。
@@ -54,6 +54,8 @@ def load_audio(audio: AudioInput) -> AudioData:
         UnsupportedExtensionError: 非対応の拡張子の場合。
         AudioDecodeError: デコードに失敗した場合。
     """
+    if isinstance(audio, AudioData):
+        return audio
     if isinstance(audio, bytes):
         return decode_audio(audio)
     if isinstance(audio, (str, Path)):
