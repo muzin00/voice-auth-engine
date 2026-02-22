@@ -100,6 +100,18 @@ class TestLoadAudio:
         result = load_audio(upper)
         assert len(result.samples) > 0
 
+    def test_bytes_input(self, wav_16k_mono: Path) -> None:
+        """bytes を受け付ける。"""
+        data = wav_16k_mono.read_bytes()
+        result = load_audio(data)
+        assert len(result.samples) > 0
+        assert result.sample_rate == 16000
+
+    def test_invalid_type_raises_type_error(self) -> None:
+        """未対応の型で TypeError。"""
+        with pytest.raises(TypeError, match="未対応の入力型です"):
+            load_audio(12345)  # type: ignore[arg-type]
+
 
 class TestLoadAudioBytes:
     """load_audio_bytes 関数のテスト。"""

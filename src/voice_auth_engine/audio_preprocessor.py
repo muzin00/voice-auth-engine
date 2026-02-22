@@ -39,30 +39,36 @@ class AudioData(NamedTuple):
         return self.samples.astype(np.float32) / 32768.0
 
 
-def load_audio(path: str | Path) -> AudioData:
-    """音声ファイルを読み込み、16kHz モノラル int16 に変換する。
+AudioInput = bytes | str | Path
+"""音声入力の型エイリアス。bytes / ファイルパス を受け付ける。"""
+
+
+def load_audio(audio: AudioInput) -> AudioData:
+    """AudioInput を 16kHz モノラル int16 の AudioData に変換する。
 
     Args:
-        path: 音声ファイルのパス。
+        audio: 音声入力。bytes / str / Path を受け付ける。
 
     Returns:
         AudioData: 変換済みの音声データ。
 
     Raises:
+        TypeError: 未対応の入力型の場合。
         FileNotFoundError: ファイルが存在しない場合。
         UnsupportedFormatError: 非対応の拡張子の場合。
         AudioDecodeError: デコードに失敗した場合。
     """
-    path = Path(path)
-
-    if not path.exists():
-        raise FileNotFoundError(f"音声ファイルが見つかりません: {path}")
-
-    ext = path.suffix.lower()
-    if ext not in SUPPORTED_EXTENSIONS:
-        raise UnsupportedFormatError(f"非対応の音声フォーマットです: {ext}")
-
-    return load_audio_bytes(path.read_bytes())
+    if isinstance(audio, bytes):
+        return load_audio_bytes(audio)
+    if isinstance(audio, (str, Path)):
+        path = Path(audio)
+        if not path.exists():
+            raise FileNotFoundError(f"音声ファイルが見つかりません: {path}")
+        ext = path.suffix.lower()
+        if ext not in SUPPORTED_EXTENSIONS:
+            raise UnsupportedFormatError(f"非対応の音声フォーマットです: {ext}")
+        return load_audio_bytes(path.read_bytes())
+    raise TypeError(f"未対応の入力型です: {type(audio)}")
 
 
 def load_audio_bytes(data: bytes, *, format: str | None = None) -> AudioData:
