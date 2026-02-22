@@ -75,6 +75,19 @@ class TestDetectSpeechWithRealAudio:
         result = detect_speech(digit_single_short, min_speech_duration=0.1)
         assert len(result.segments) >= 1
 
+    def test_extracted_speech_has_nonzero_amplitude(self, digits_clear: AudioData) -> None:
+        """抽出した発話音声が実際の音声データを含む（ゼロでない）。"""
+        segments = detect_speech(digits_clear)
+        speech = extract_speech(segments)
+        rms = np.sqrt(np.mean(speech.samples.astype(np.float32) ** 2))
+        assert rms > 0
+
+    def test_detected_speech_duration_is_reasonable(self, digits_clear: AudioData) -> None:
+        """検出された発話時間が音声の実際の内容に見合う長さである。"""
+        segments = detect_speech(digits_clear)
+        total_speech_sec = sum(s.end_sec - s.start_sec for s in segments.segments)
+        assert total_speech_sec >= 1.0
+
     def test_quiet_speech_detected(self, digits_clear: AudioData) -> None:
         """音量を下げた音声でも検出される。"""
         quiet_samples = (digits_clear.samples.astype(np.float32) * 0.15).astype(np.int16)

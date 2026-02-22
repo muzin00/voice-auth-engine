@@ -84,7 +84,10 @@ def detect_speech(
     if len(audio.samples) == 0:
         return SpeechSegments(segments=[], audio=audio)
 
-    vad.accept_waveform(audio.samples_f32)
+    samples_f32 = audio.samples_f32
+    window_size = config.silero_vad.window_size
+    for i in range(0, len(samples_f32), window_size):
+        vad.accept_waveform(samples_f32[i : i + window_size])
     vad.flush()
 
     segments: list[SpeechSegment] = []
