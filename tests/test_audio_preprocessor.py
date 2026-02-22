@@ -10,10 +10,10 @@ import pytest
 from voice_auth_engine.audio_preprocessor import (
     AudioData,
     AudioDecodeError,
-    UnsupportedFormatError,
     decode_audio,
     load_audio,
 )
+from voice_auth_engine.audio_validator import UnsupportedExtensionError
 
 from .audio_factory import generate_audio_file
 
@@ -74,10 +74,10 @@ class TestLoadAudio:
             load_audio(tmp_audio_dir / "nonexistent.wav")
 
     def test_raises_unsupported_format(self, tmp_audio_dir: Path) -> None:
-        """非対応拡張子で UnsupportedFormatError。"""
+        """非対応拡張子で UnsupportedExtensionError。"""
         txt_file = tmp_audio_dir / "test.txt"
         txt_file.write_text("not audio")
-        with pytest.raises(UnsupportedFormatError):
+        with pytest.raises(UnsupportedExtensionError):
             load_audio(txt_file)
 
     def test_raises_audio_decode_error_for_corrupt(self, tmp_audio_dir: Path) -> None:

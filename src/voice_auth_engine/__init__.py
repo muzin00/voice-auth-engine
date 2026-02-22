@@ -2,7 +2,6 @@ from voice_auth_engine.audio_preprocessor import (
     AudioData,
     AudioDecodeError,
     AudioPreprocessError,
-    UnsupportedFormatError,
     decode_audio,
     load_audio,
 )
@@ -86,7 +85,6 @@ __all__ = [
     "SUPPORTED_EXTENSIONS",
     "TranscriptionResult",
     "UnsupportedExtensionError",
-    "UnsupportedFormatError",
     "VerificationResult",
     "analyze_passphrase",
     "check_speech_duration",
