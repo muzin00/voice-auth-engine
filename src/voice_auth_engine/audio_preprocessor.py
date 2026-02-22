@@ -10,17 +10,13 @@ import av
 import numpy as np
 import numpy.typing as npt
 
-TARGET_SAMPLE_RATE = 16000
+from voice_auth_engine.audio_validator import validate_extension
 
-SUPPORTED_EXTENSIONS = frozenset({".wav", ".mp3", ".ogg", ".webm", ".aac", ".flac", ".m4a"})
+TARGET_SAMPLE_RATE = 16000
 
 
 class AudioPreprocessError(Exception):
     """音声前処理の基底例外。"""
-
-
-class UnsupportedFormatError(AudioPreprocessError):
-    """非対応の音声フォーマット。"""
 
 
 class AudioDecodeError(AudioPreprocessError):
@@ -55,7 +51,7 @@ def load_audio(audio: AudioInput) -> AudioData:
     Raises:
         TypeError: 未対応の入力型の場合。
         FileNotFoundError: ファイルが存在しない場合。
-        UnsupportedFormatError: 非対応の拡張子の場合。
+        UnsupportedExtensionError: 非対応の拡張子の場合。
         AudioDecodeError: デコードに失敗した場合。
     """
     if isinstance(audio, bytes):
@@ -64,9 +60,7 @@ def load_audio(audio: AudioInput) -> AudioData:
         path = Path(audio)
         if not path.exists():
             raise FileNotFoundError(f"音声ファイルが見つかりません: {path}")
-        ext = path.suffix.lower()
-        if ext not in SUPPORTED_EXTENSIONS:
-            raise UnsupportedFormatError(f"非対応の音声フォーマットです: {ext}")
+        validate_extension(path)
         return decode_audio(path.read_bytes())
     raise TypeError(f"未対応の入力型です: {type(audio)}")
 

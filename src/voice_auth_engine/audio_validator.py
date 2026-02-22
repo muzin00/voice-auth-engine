@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from voice_auth_engine.audio_preprocessor import AudioData
+if TYPE_CHECKING:
+    from voice_auth_engine.audio_preprocessor import AudioData
 
 SUPPORTED_EXTENSIONS: frozenset[str] = frozenset(
     {".wav", ".mp3", ".ogg", ".webm", ".aac", ".flac", ".m4a"}
