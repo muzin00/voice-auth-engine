@@ -30,6 +30,15 @@ class Embedding(NamedTuple):
 
     values: npt.NDArray[np.float32]
 
+    def to_bytes(self) -> bytes:
+        """埋め込みベクトルをバイト列にシリアライズする。"""
+        return self.values.tobytes()
+
+    @staticmethod
+    def from_bytes(data: bytes) -> Embedding:
+        """バイト列から埋め込みベクトルを復元する。"""
+        return Embedding(values=np.frombuffer(data, dtype=np.float32).copy())
+
 
 def extract_embedding(
     audio: AudioData,
