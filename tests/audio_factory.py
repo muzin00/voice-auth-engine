@@ -11,6 +11,7 @@ import numpy.typing as npt
 
 from voice_auth_engine.audio_preprocessor import AudioData
 from voice_auth_engine.embedding_extractor import Embedding
+from voice_auth_engine.speech_detector import SpeechSegment, SpeechSegments
 
 TARGET_SAMPLE_RATE = 16000
 
@@ -59,6 +60,17 @@ def make_audio(duration: float) -> AudioData:
 def make_embedding(values: list[float]) -> Embedding:
     """テスト用 Embedding を生成する。"""
     return Embedding(values=np.array(values, dtype=np.float32))
+
+
+def make_segments(audio: AudioData, *, empty: bool = False) -> SpeechSegments:
+    """テスト用 SpeechSegments を生成する。"""
+    if empty:
+        return SpeechSegments(segments=[], audio=audio)
+    n = len(audio.samples)
+    return SpeechSegments(
+        segments=[SpeechSegment(0, n, 0.0, n / audio.sample_rate)],
+        audio=audio,
+    )
 
 
 def generate_audio_file(
