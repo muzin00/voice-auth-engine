@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from voice_auth_engine.math import cosine_similarity
+from voice_auth_engine.math import cosine_similarity, normalized_edit_distance
 
 
 class TestCosineSimilarity:
@@ -32,3 +32,33 @@ class TestCosineSimilarity:
         z = np.zeros(3, dtype=np.float32)
         assert cosine_similarity(a, z) == pytest.approx(0.0)
         assert cosine_similarity(z, a) == pytest.approx(0.0)
+
+
+class TestNormalizedEditDistance:
+    """normalized_edit_distance のテスト。"""
+
+    def test_identical_sequences(self) -> None:
+        """同一系列 → 0.0。"""
+        seq = ["a", "b", "c"]
+        assert normalized_edit_distance(seq, seq) == pytest.approx(0.0)
+
+    def test_both_empty(self) -> None:
+        """両方空 → 0.0。"""
+        assert normalized_edit_distance([], []) == pytest.approx(0.0)
+
+    def test_one_empty(self) -> None:
+        """片方空 → 1.0。"""
+        assert normalized_edit_distance(["a", "b"], []) == pytest.approx(1.0)
+        assert normalized_edit_distance([], ["a", "b"]) == pytest.approx(1.0)
+
+    def test_partial_match(self) -> None:
+        """部分一致 → 1/3。"""
+        a = ["a", "b", "c"]
+        b = ["a", "b", "d"]
+        assert normalized_edit_distance(a, b) == pytest.approx(1 / 3)
+
+    def test_completely_different(self) -> None:
+        """完全不一致 → 1.0。"""
+        a = ["a", "b", "c"]
+        b = ["x", "y", "z"]
+        assert normalized_edit_distance(a, b) == pytest.approx(1.0)
