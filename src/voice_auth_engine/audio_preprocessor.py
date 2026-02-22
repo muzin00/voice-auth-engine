@@ -59,7 +59,7 @@ def load_audio(audio: AudioInput) -> AudioData:
         AudioDecodeError: デコードに失敗した場合。
     """
     if isinstance(audio, bytes):
-        return load_audio_bytes(audio)
+        return decode_audio(audio)
     if isinstance(audio, (str, Path)):
         path = Path(audio)
         if not path.exists():
@@ -67,11 +67,11 @@ def load_audio(audio: AudioInput) -> AudioData:
         ext = path.suffix.lower()
         if ext not in SUPPORTED_EXTENSIONS:
             raise UnsupportedFormatError(f"非対応の音声フォーマットです: {ext}")
-        return load_audio_bytes(path.read_bytes())
+        return decode_audio(path.read_bytes())
     raise TypeError(f"未対応の入力型です: {type(audio)}")
 
 
-def load_audio_bytes(data: bytes, *, format: str | None = None) -> AudioData:
+def decode_audio(data: bytes, *, format: str | None = None) -> AudioData:
     """bytes から音声をデコードし、16kHz モノラル int16 に変換する。
 
     Args:
