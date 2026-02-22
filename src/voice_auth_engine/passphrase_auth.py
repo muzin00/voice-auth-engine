@@ -71,6 +71,11 @@ class PassphraseAuth:
         self._min_speech_seconds = min_speech_seconds
         self._min_unique_phonemes = min_unique_phonemes
 
+    @property
+    def threshold(self) -> float:
+        """照合の閾値（コサイン類似度）。"""
+        return self._threshold
+
     def create_enroller(self) -> PassphraseAuthEnroller:
         """登録用 Enroller を生成する。"""
         return PassphraseAuthEnroller(self)
@@ -175,4 +180,4 @@ class PassphraseAuthVerifier:
         """
         test_embedding = self._auth.extract_passphrase_embedding(audio)
         score = cosine_similarity(self._embedding.values, test_embedding.values)
-        return VerificationResult(accepted=score >= self._auth._threshold, score=score)
+        return VerificationResult(accepted=score >= self._auth.threshold, score=score)
