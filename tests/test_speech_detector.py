@@ -15,12 +15,10 @@ from voice_auth_engine.speech_detector import (
 )
 
 from .audio_factory import generate_silence_samples, generate_voiced_samples, make_audio_data
-from .conftest import requires_silero_vad_model
 
 SAMPLE_RATE = 16000
 
 
-@requires_silero_vad_model
 class TestDetectSpeech:
     """detect_speech 関数のテスト。"""
 
@@ -85,7 +83,6 @@ class TestDetectSpeech:
             detect_speech(voiced_audio, model_path="/nonexistent/model.onnx")
 
 
-@requires_silero_vad_model
 class TestExtractSpeech:
     """extract_speech 関数のテスト。"""
 
