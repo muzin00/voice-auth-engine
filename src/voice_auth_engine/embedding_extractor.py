@@ -11,6 +11,7 @@ import sherpa_onnx
 
 from voice_auth_engine.audio_preprocessor import AudioData
 from voice_auth_engine.model_config import campplus_config
+from voice_auth_engine.model_downloader import ModelDownloader
 
 
 class EmbeddingExtractorError(Exception):
@@ -59,7 +60,7 @@ def extract_embedding(
         EmbeddingExtractionError: 埋め込み抽出処理に失敗した場合。
     """
     if model_path is None:
-        model_path = campplus_config.path
+        model_path = ModelDownloader().ensure_download(campplus_config)
     model_path = Path(model_path)
 
     if not model_path.exists():

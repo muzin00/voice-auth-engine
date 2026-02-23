@@ -469,6 +469,7 @@ source = { editable = "." }
 dependencies = [
     { name = "av" },
     { name = "numpy" },
+    { name = "platformdirs" },
     { name = "pyopenjtalk" },
     { name = "sherpa-onnx" },
     { name = "sherpa-onnx-core" },
@@ -488,6 +489,7 @@ dev = [
 requires-dist = [
     { name = "av" },
     { name = "numpy" },
+    { name = "platformdirs" },
     { name = "pyopenjtalk" },
     { name = "sherpa-onnx" },
     { name = "sherpa-onnx-core" },
