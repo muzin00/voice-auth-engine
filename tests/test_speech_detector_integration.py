@@ -10,8 +10,6 @@ import pytest
 from voice_auth_engine.audio_preprocessor import AudioData, load_audio
 from voice_auth_engine.speech_detector import detect_speech, extract_speech
 
-from .conftest import requires_silero_vad_model
-
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 SAMPLE_RATE = 16000
 
@@ -34,7 +32,6 @@ def digit_single_short() -> AudioData:
     return load_audio(FIXTURES_DIR / "digit_single_short.mp3")
 
 
-@requires_silero_vad_model
 class TestDetectSpeechWithRealAudio:
     """実音声を使った detect_speech のテスト。"""
 
@@ -105,7 +102,6 @@ class TestDetectSpeechWithRealAudio:
         assert result.segments[0].start_sec >= 1.5
 
 
-@requires_silero_vad_model
 class TestExtractSpeechWithRealAudio:
     """実音声を使った extract_speech のテスト。"""
 
