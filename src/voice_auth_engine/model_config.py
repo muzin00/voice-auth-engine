@@ -1,10 +1,12 @@
 """モデル設定の定義。"""
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
+import platformdirs
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-MODELS_DIR = PROJECT_ROOT / "models"
 
 
 @dataclass(frozen=True)
@@ -20,7 +22,26 @@ class ModelConfig:
     @property
     def path(self) -> Path:
         """モデルファイルの絶対パスを返す。"""
-        return MODELS_DIR / self.dest
+        return self.get_models_dir() / self.dest
+
+    @staticmethod
+    def get_models_dir() -> Path:
+        """モデルディレクトリを解決する。
+
+        優先順位:
+        1. 環境変数 VOICE_AUTH_ENGINE_MODELS_DIR
+        2. リポジトリルート models/（存在 & 中身がある場合のみ、開発用後方互換）
+        3. OS 標準キャッシュ: platformdirs.user_cache_dir("voice-auth-engine") / "models"
+        """
+        env = os.environ.get("VOICE_AUTH_ENGINE_MODELS_DIR")
+        if env:
+            return Path(env)
+
+        legacy = PROJECT_ROOT / "models"
+        if legacy.is_dir() and any(legacy.iterdir()):
+            return legacy
+
+        return Path(platformdirs.user_cache_dir("voice-auth-engine")) / "models"
 
 
 silero_vad_config = ModelConfig(

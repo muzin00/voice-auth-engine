@@ -9,6 +9,7 @@ import sherpa_onnx
 
 from voice_auth_engine.audio_preprocessor import AudioData
 from voice_auth_engine.model_config import sense_voice_config
+from voice_auth_engine.model_downloader import ModelDownloader
 
 
 class SpeechRecognizerError(Exception):
@@ -52,7 +53,7 @@ def transcribe(
         RecognitionError: 音声認識処理に失敗した場合。
     """
     if model_dir is None:
-        model_dir = sense_voice_config.path
+        model_dir = ModelDownloader().ensure_download(sense_voice_config)
     model_dir = Path(model_dir)
 
     if not model_dir.exists():

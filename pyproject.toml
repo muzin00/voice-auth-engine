@@ -7,11 +7,15 @@ requires-python = ">=3.13"
 dependencies = [
     "av",
     "numpy",
+    "platformdirs",
     "pyopenjtalk",
     "sherpa-onnx",
     "sherpa-onnx-core",
     "tqdm>=4.67.3",
 ]
+
+[project.scripts]
+voice-auth-engine = "voice_auth_engine.cli:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -10,6 +10,7 @@ import sherpa_onnx
 
 from voice_auth_engine.audio_preprocessor import AudioData
 from voice_auth_engine.model_config import silero_vad_config
+from voice_auth_engine.model_downloader import ModelDownloader
 
 
 class SpeechDetectorError(Exception):
@@ -60,7 +61,7 @@ def detect_speech(
         SpeechDetectorModelLoadError: モデルの読み込みに失敗した場合。
     """
     if model_path is None:
-        model_path = silero_vad_config.path
+        model_path = ModelDownloader().ensure_download(silero_vad_config)
     model_path = Path(model_path)
 
     if not model_path.exists():

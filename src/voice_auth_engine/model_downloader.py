@@ -1,5 +1,6 @@
 """Download model files for sherpa-onnx."""
 
+import logging
 import shutil
 import tarfile
 import urllib.request
@@ -9,12 +10,20 @@ from tqdm import tqdm
 
 from voice_auth_engine.model_config import DEFAULT_MODELS, ModelConfig
 
+logger = logging.getLogger(__name__)
+
+
+class ModelDownloadError(Exception):
+    """モデルのダウンロードに失敗した場合の例外。"""
+
 
 class ModelDownloader:
     """モデルファイルをダウンロードする。"""
 
-    def __init__(self, models_dir: Path, models: list[ModelConfig] | None = None) -> None:
-        self.models_dir = models_dir
+    def __init__(
+        self, models_dir: Path | None = None, models: list[ModelConfig] | None = None
+    ) -> None:
+        self.models_dir = models_dir or ModelConfig.get_models_dir()
         self.models = models or DEFAULT_MODELS
 
     def download_all(self) -> None:
@@ -86,3 +95,30 @@ class ModelDownloader:
                 inner_path.rmdir()
         finally:
             tmp_file.unlink(missing_ok=True)
+
+    def ensure_download(self, model: ModelConfig) -> Path:
+        """モデルが存在することを保証し、パスを返す。
+
+        ダウンロード済みでなければ自動的にダウンロードする。
+
+        Args:
+            model: モデル設定。
+
+        Returns:
+            モデルファイル/ディレクトリの絶対パス。
+
+        Raises:
+            ModelDownloadError: ダウンロードに失敗した場合。
+        """
+        if self.is_downloaded(model):
+            return self.models_dir / model.dest
+
+        logger.info("モデル '%s' をダウンロードしています...", model.name)
+        try:
+            self.download(model)
+        except Exception as exc:
+            raise ModelDownloadError(
+                f"モデル '{model.name}' のダウンロードに失敗しました: {exc}"
+            ) from exc
+
+        return self.models_dir / model.dest
