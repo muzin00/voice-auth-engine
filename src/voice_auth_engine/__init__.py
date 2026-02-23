@@ -37,10 +37,12 @@ from voice_auth_engine.passphrase_auth import (
 from voice_auth_engine.passphrase_validator import (
     EmptyPassphraseError,
     InsufficientPhonemeError,
-    PassphraseInfo,
     PassphraseValidationError,
-    analyze_passphrase,
     validate_passphrase,
+)
+from voice_auth_engine.phoneme_extractor import (
+    Phoneme,
+    extract_phonemes,
 )
 from voice_auth_engine.speech_detector import (
     SpeechDetectorError,
@@ -81,7 +83,7 @@ __all__ = [
     "PassphraseEnrollmentError",
     "PassphraseExtractionResult",
     "VerificationResult",
-    "PassphraseInfo",
+    "Phoneme",
     "PassphraseValidationError",
     "RecognitionError",
     "RecognizerModelLoadError",
@@ -93,7 +95,7 @@ __all__ = [
     "SUPPORTED_EXTENSIONS",
     "TranscriptionResult",
     "UnsupportedExtensionError",
-    "analyze_passphrase",
+    "extract_phonemes",
     "cosine_similarity",
     "normalized_edit_distance",
     "detect_speech",
