@@ -30,7 +30,6 @@ from voice_auth_engine.passphrase_auth import (
     PassphraseAuthEnroller,
     PassphraseAuthError,
     PassphraseAuthVerifier,
-    PassphraseEnrollmentError,
     PassphraseExtractionResult,
     VerificationResult,
 )
@@ -38,7 +37,9 @@ from voice_auth_engine.passphrase_validator import (
     EmptyPassphraseError,
     InsufficientPhonemeError,
     PassphraseValidationError,
+    PhonemeConsistencyError,
     validate_passphrase,
+    validate_phoneme_consistency,
 )
 from voice_auth_engine.phoneme_extractor import (
     Phoneme,
@@ -80,7 +81,7 @@ __all__ = [
     "PassphraseAuthError",
     "PassphraseAuthEnroller",
     "PassphraseAuthVerifier",
-    "PassphraseEnrollmentError",
+    "PhonemeConsistencyError",
     "PassphraseExtractionResult",
     "VerificationResult",
     "Phoneme",
@@ -107,4 +108,5 @@ __all__ = [
     "validate_audio",
     "validate_extension",
     "validate_passphrase",
+    "validate_phoneme_consistency",
 ]

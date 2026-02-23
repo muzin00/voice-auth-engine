@@ -9,13 +9,11 @@ import numpy as np
 from voice_auth_engine.audio_preprocessor import AudioInput, load_audio
 from voice_auth_engine.audio_validator import validate_audio
 from voice_auth_engine.embedding_extractor import Embedding, extract_embedding
-from voice_auth_engine.math import (
-    cosine_similarity,
-    normalized_edit_distance,
-    pairwise_distances,
-    select_medoid,
+from voice_auth_engine.math import cosine_similarity, normalized_edit_distance
+from voice_auth_engine.passphrase_validator import (
+    validate_passphrase,
+    validate_phoneme_consistency,
 )
-from voice_auth_engine.passphrase_validator import validate_passphrase
 from voice_auth_engine.phoneme_extractor import Phoneme, extract_phonemes
 from voice_auth_engine.speech_detector import detect_speech, extract_speech
 from voice_auth_engine.speech_recognizer import transcribe
@@ -23,10 +21,6 @@ from voice_auth_engine.speech_recognizer import transcribe
 
 class PassphraseAuthError(Exception):
     """PassphraseAuth の基底例外。"""
-
-
-class PassphraseEnrollmentError(PassphraseAuthError):
-    """登録時のパスフレーズ不整合。"""
 
 
 class PassphraseExtractionResult(NamedTuple):
@@ -40,16 +34,16 @@ class EnrollmentResult(NamedTuple):
     """登録結果。"""
 
     embedding: Embedding
-    phonemes: list[str]  # 基準音素列（メドイドで決定）
+    phoneme: Phoneme  # 基準音素（メドイドで決定）
 
 
 class VerificationResult(NamedTuple):
     """照合結果。"""
 
-    accepted: bool  # 受理/拒否
-    score: float  # コサイン類似度 [-1.0, 1.0]
-    phoneme_score: float | None = None  # 正規化編集距離 [0.0, 1.0]
+    voiceprint_accepted: bool  # 受理/拒否
+    voiceprint_score: float  # コサイン類似度 [-1.0, 1.0]
     passphrase_accepted: bool | None = None  # 音素照合の受理/拒否
+    passphrase_score: float | None = None  # 正規化編集距離 [0.0, 1.0]
 
 
 class PassphraseAuth:
@@ -74,8 +68,8 @@ class PassphraseAuth:
         embedding = Embedding.from_bytes(saved)
         verifier = auth.create_verifier(embedding)
         result = verifier.verify(audio_bytes)
-        result.accepted  # True/False
-        result.score     # 0.85
+        result.voiceprint_accepted  # True/False
+        result.voiceprint_score     # 0.85
     """
 
     def __init__(
@@ -111,15 +105,15 @@ class PassphraseAuth:
         return PassphraseAuthEnroller(self)
 
     def create_verifier(
-        self, embedding: Embedding, phonemes: list[str] | None = None
+        self, embedding: Embedding, phoneme: Phoneme | None = None
     ) -> PassphraseAuthVerifier:
         """照合用 Verifier を生成する。
 
         Args:
             embedding: 登録済み埋め込みベクトル。
-            phonemes: 登録済み基準音素列。None の場合は音素照合を無効化。
+            phoneme: 登録済み基準音素。None の場合は音素照合を無効化。
         """
-        return PassphraseAuthVerifier(self, embedding, phonemes)
+        return PassphraseAuthVerifier(self, embedding, phoneme)
 
     def extract_passphrase(self, audio: AudioInput) -> PassphraseExtractionResult:
         """音声入力から検証済み埋め込みベクトルと音素列を抽出する。
@@ -178,7 +172,7 @@ class PassphraseAuthEnroller:
     def __init__(self, auth: PassphraseAuth) -> None:
         self._auth = auth
         self._embeddings: list[Embedding] = []
-        self._phonemes: list[list[str]] = []
+        self._phoneme_samples: list[Phoneme] = []
 
     def add_sample(self, audio: AudioInput) -> None:
         """音声サンプルを蓄積する。
@@ -193,7 +187,7 @@ class PassphraseAuthEnroller:
         """
         result = self._auth.extract_passphrase(audio)
         self._embeddings.append(result.embedding)
-        self._phonemes.append(result.phoneme.values)
+        self._phoneme_samples.append(result.phoneme)
 
     def enroll(self) -> EnrollmentResult:
         """蓄積サンプルの平均埋め込みベクトルと基準音素列を返す。
@@ -206,29 +200,14 @@ class PassphraseAuthEnroller:
             raise ValueError("サンプルが蓄積されていません")
         mean_values = np.mean([e.values for e in self._embeddings], axis=0)
         embedding = Embedding(values=mean_values)
-        phonemes: list[str] = []
         if self._auth._phoneme_threshold is not None:
-            phonemes = self._select_reference_phonemes()
-        return EnrollmentResult(embedding=embedding, phonemes=phonemes)
-
-    def _select_reference_phonemes(self) -> list[str]:
-        """メドイドによる基準音素列を決定する。
-
-        Raises:
-            PassphraseEnrollmentError: 音素列の整合性チェックに失敗した場合。
-        """
-        distances = pairwise_distances(self._phonemes)
-        threshold = self._auth._phoneme_threshold
-        assert threshold is not None
-        for i in range(len(self._phonemes)):
-            for j in range(i + 1, len(self._phonemes)):
-                if distances[i][j] > threshold:
-                    raise PassphraseEnrollmentError(
-                        f"音素列の不整合: サンプル {i} と {j} の距離 "
-                        f"{distances[i][j]:.3f} が閾値 {threshold} を超えています"
-                    )
-        medoid_index = select_medoid(distances)
-        return self._phonemes[medoid_index]
+            validate_phoneme_consistency(
+                self._phoneme_samples, threshold=self._auth._phoneme_threshold
+            )
+            phoneme = Phoneme.select_reference(self._phoneme_samples)
+        else:
+            phoneme = Phoneme(values=[])
+        return EnrollmentResult(embedding=embedding, phoneme=phoneme)
 
     @property
     def sample_count(self) -> int:
@@ -247,11 +226,11 @@ class PassphraseAuthVerifier:
         self,
         auth: PassphraseAuth,
         embedding: Embedding,
-        phonemes: list[str] | None = None,
+        phoneme: Phoneme | None = None,
     ) -> None:
         self._auth = auth
         self._embedding = embedding
-        self._phonemes = phonemes
+        self._phoneme = phoneme
 
     def verify(self, audio: AudioInput) -> VerificationResult:
         """音声を登録済み声紋と照合する。
@@ -268,15 +247,15 @@ class PassphraseAuthVerifier:
         score = cosine_similarity(self._embedding.values, result.embedding.values)
         speaker_accepted = score >= self._auth.threshold
 
-        if self._phonemes and self._auth._phoneme_threshold is not None:
-            phoneme_score = normalized_edit_distance(self._phonemes, result.phoneme.values)
-            passphrase_accepted = phoneme_score <= self._auth._phoneme_threshold
-            accepted = speaker_accepted and passphrase_accepted
+        if self._phoneme is not None and self._auth._phoneme_threshold is not None:
+            passphrase_score = normalized_edit_distance(self._phoneme.values, result.phoneme.values)
+            passphrase_accepted = passphrase_score <= self._auth._phoneme_threshold
+            voiceprint_accepted = speaker_accepted and passphrase_accepted
             return VerificationResult(
-                accepted=accepted,
-                score=score,
-                phoneme_score=phoneme_score,
+                voiceprint_accepted=voiceprint_accepted,
+                voiceprint_score=score,
+                passphrase_score=passphrase_score,
                 passphrase_accepted=passphrase_accepted,
             )
 
-        return VerificationResult(accepted=speaker_accepted, score=score)
+        return VerificationResult(voiceprint_accepted=speaker_accepted, voiceprint_score=score)

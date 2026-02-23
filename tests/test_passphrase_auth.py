@@ -15,8 +15,8 @@ from voice_auth_engine.passphrase_auth import (
     PassphraseAuth,
     PassphraseAuthEnroller,
     PassphraseAuthVerifier,
-    PassphraseEnrollmentError,
 )
+from voice_auth_engine.passphrase_validator import PhonemeConsistencyError
 from voice_auth_engine.phoneme_extractor import Phoneme
 
 from .audio_factory import make_audio, make_embedding, make_segments
@@ -197,8 +197,8 @@ class TestPassphraseAuthVerifier:
 
         verifier = auth.create_verifier(enrolled)
         result = verifier.verify(audio)
-        assert result.accepted is True
-        assert result.score == pytest.approx(1.0)
+        assert result.voiceprint_accepted is True
+        assert result.voiceprint_score == pytest.approx(1.0)
 
     @patch("voice_auth_engine.passphrase_auth.load_audio")
     @patch("voice_auth_engine.passphrase_auth.extract_speech")
@@ -222,8 +222,8 @@ class TestPassphraseAuthVerifier:
 
         verifier = auth.create_verifier(enrolled)
         result = verifier.verify(audio)
-        assert result.accepted is False
-        assert result.score == pytest.approx(0.0)
+        assert result.voiceprint_accepted is False
+        assert result.voiceprint_score == pytest.approx(0.0)
 
     @patch("voice_auth_engine.passphrase_auth.load_audio")
     @patch("voice_auth_engine.passphrase_auth.extract_speech")
@@ -361,7 +361,7 @@ class TestPassphraseAuthPhonemes:
             enroller.add_sample(audio)
         result = enroller.enroll()
         assert isinstance(result, EnrollmentResult)
-        assert result.phonemes == ["a", "i", "u", "e", "o"]
+        assert result.phoneme.values == ["a", "i", "u", "e", "o"]
 
     @patch("voice_auth_engine.passphrase_auth.extract_phonemes")
     @patch("voice_auth_engine.passphrase_auth.transcribe")
@@ -378,7 +378,7 @@ class TestPassphraseAuthPhonemes:
         mock_transcribe: MagicMock,
         mock_extract_phonemes: MagicMock,
     ) -> None:
-        """音素列の距離が閾値を超えると PassphraseEnrollmentError。"""
+        """音素列の距離が閾値を超えると PhonemeConsistencyError。"""
         auth = PassphraseAuth(
             threshold=0.5,
             min_speech_seconds=0.1,
@@ -402,7 +402,7 @@ class TestPassphraseAuthPhonemes:
         enroller = auth.create_enroller()
         enroller.add_sample(audio)
         enroller.add_sample(audio)
-        with pytest.raises(PassphraseEnrollmentError, match="音素列の不整合"):
+        with pytest.raises(PhonemeConsistencyError, match="音素列の不整合"):
             enroller.enroll()
 
     @patch("voice_auth_engine.passphrase_auth.load_audio")
@@ -427,7 +427,7 @@ class TestPassphraseAuthPhonemes:
         enroller = auth.create_enroller()
         enroller.add_sample(audio)
         result = enroller.enroll()
-        assert result.phonemes == []
+        assert result.phoneme.values == []
 
 
 class TestPassphraseAuthVerifierPhonemes:
@@ -471,13 +471,13 @@ class TestPassphraseAuthVerifierPhonemes:
         )
 
         enrolled = make_embedding([1.0, 0.0, 0.0])
-        phonemes = ["a", "i", "u", "e", "o"]
-        verifier = auth_with_phoneme_gate.create_verifier(enrolled, phonemes)
+        phoneme = Phoneme(values=["a", "i", "u", "e", "o"])
+        verifier = auth_with_phoneme_gate.create_verifier(enrolled, phoneme)
         result = verifier.verify(audio)
 
-        assert result.accepted is True
+        assert result.voiceprint_accepted is True
         assert result.passphrase_accepted is True
-        assert result.phoneme_score == pytest.approx(0.0)
+        assert result.passphrase_score == pytest.approx(0.0)
 
     @patch("voice_auth_engine.passphrase_auth.extract_phonemes")
     @patch("voice_auth_engine.passphrase_auth.transcribe")
@@ -507,14 +507,14 @@ class TestPassphraseAuthVerifierPhonemes:
         )
 
         enrolled = make_embedding([1.0, 0.0, 0.0])
-        phonemes = ["a", "i", "u", "e", "o"]
-        verifier = auth_with_phoneme_gate.create_verifier(enrolled, phonemes)
+        phoneme = Phoneme(values=["a", "i", "u", "e", "o"])
+        verifier = auth_with_phoneme_gate.create_verifier(enrolled, phoneme)
         result = verifier.verify(audio)
 
-        assert result.accepted is False
+        assert result.voiceprint_accepted is False
         assert result.passphrase_accepted is False
-        assert result.phoneme_score is not None
-        assert result.phoneme_score > 0.3
+        assert result.passphrase_score is not None
+        assert result.passphrase_score > 0.3
 
     @patch("voice_auth_engine.passphrase_auth.extract_phonemes")
     @patch("voice_auth_engine.passphrase_auth.transcribe")
@@ -544,13 +544,13 @@ class TestPassphraseAuthVerifierPhonemes:
         )
 
         enrolled = make_embedding([1.0, 0.0, 0.0])
-        phonemes = ["a", "i", "u", "e", "o"]
-        verifier = auth_with_phoneme_gate.create_verifier(enrolled, phonemes)
+        phoneme = Phoneme(values=["a", "i", "u", "e", "o"])
+        verifier = auth_with_phoneme_gate.create_verifier(enrolled, phoneme)
         result = verifier.verify(audio)
 
-        assert result.accepted is False
+        assert result.voiceprint_accepted is False
         assert result.passphrase_accepted is True
-        assert result.score == pytest.approx(0.0)
+        assert result.voiceprint_score == pytest.approx(0.0)
 
     @patch("voice_auth_engine.passphrase_auth.load_audio")
     @patch("voice_auth_engine.passphrase_auth.extract_speech")
@@ -575,6 +575,6 @@ class TestPassphraseAuthVerifierPhonemes:
         verifier = auth.create_verifier(enrolled)
         result = verifier.verify(audio)
 
-        assert result.accepted is True
-        assert result.phoneme_score is None
+        assert result.voiceprint_accepted is True
+        assert result.passphrase_score is None
         assert result.passphrase_accepted is None

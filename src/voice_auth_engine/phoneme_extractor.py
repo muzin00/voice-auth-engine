@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pyopenjtalk
 
+from voice_auth_engine.math import pairwise_distances, select_medoid
 from voice_auth_engine.passphrase_validator import EmptyPassphraseError
 
 # フィルタ対象の音素記号
@@ -25,6 +26,20 @@ class Phoneme:
     def unique_count(self) -> int:
         """ユニーク音素数。"""
         return len(self.unique)
+
+    @staticmethod
+    def select_reference(samples: list[Phoneme]) -> Phoneme:
+        """複数サンプルからメドイド（基準音素）を選択する。
+
+        Args:
+            samples: 音素サンプルのリスト。
+
+        Returns:
+            メドイドとして選択された音素。
+        """
+        distances = pairwise_distances([s.values for s in samples])
+        medoid_index = select_medoid(distances)
+        return samples[medoid_index]
 
 
 def extract_phonemes(text: str) -> Phoneme:
