@@ -25,10 +25,13 @@ from voice_auth_engine.embedding_extractor import (
 )
 from voice_auth_engine.math import cosine_similarity, normalized_edit_distance
 from voice_auth_engine.passphrase_auth import (
+    EnrollmentResult,
     PassphraseAuth,
     PassphraseAuthEnroller,
     PassphraseAuthError,
     PassphraseAuthVerifier,
+    PassphraseEnrollmentError,
+    PassphraseExtractionResult,
 )
 from voice_auth_engine.passphrase_validator import (
     EmptyPassphraseError,
@@ -67,12 +70,15 @@ __all__ = [
     "EmbeddingModelLoadError",
     "EmptyAudioError",
     "EmptyPassphraseError",
+    "EnrollmentResult",
     "InsufficientDurationError",
     "InsufficientPhonemeError",
     "PassphraseAuth",
     "PassphraseAuthError",
     "PassphraseAuthEnroller",
     "PassphraseAuthVerifier",
+    "PassphraseEnrollmentError",
+    "PassphraseExtractionResult",
     "PassphraseInfo",
     "PassphraseValidationError",
     "RecognitionError",
