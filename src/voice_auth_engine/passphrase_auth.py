@@ -9,14 +9,32 @@ import numpy as np
 from voice_auth_engine.audio_preprocessor import AudioInput, load_audio
 from voice_auth_engine.audio_validator import validate_audio
 from voice_auth_engine.embedding_extractor import Embedding, extract_embedding
-from voice_auth_engine.math import cosine_similarity
-from voice_auth_engine.passphrase_validator import validate_passphrase
+from voice_auth_engine.math import cosine_similarity, pairwise_distances, select_medoid
+from voice_auth_engine.passphrase_validator import analyze_passphrase, validate_passphrase
 from voice_auth_engine.speech_detector import detect_speech, extract_speech
 from voice_auth_engine.speech_recognizer import transcribe
 
 
 class PassphraseAuthError(Exception):
     """PassphraseAuth の基底例外。"""
+
+
+class PassphraseEnrollmentError(PassphraseAuthError):
+    """登録時のパスフレーズ不整合。"""
+
+
+class PassphraseExtractionResult(NamedTuple):
+    """パスフレーズ抽出結果。"""
+
+    embedding: Embedding
+    phonemes: list[str]
+
+
+class EnrollmentResult(NamedTuple):
+    """登録結果。"""
+
+    embedding: Embedding
+    phonemes: list[str]  # 基準音素列（メドイドで決定）
 
 
 class VerificationResult(NamedTuple):
@@ -58,6 +76,7 @@ class PassphraseAuth:
         threshold: float = 0.5,
         min_speech_seconds: float = 3.0,
         min_unique_phonemes: int | None = 5,
+        phoneme_threshold: float | None = None,
     ) -> None:
         """初期化。
 
@@ -66,10 +85,13 @@ class PassphraseAuth:
             min_speech_seconds: 最小発話時間（秒）。
             min_unique_phonemes: 音素多様性チェックの最小ユニーク音素数。
                 None の場合は音素チェックを無効化。
+            phoneme_threshold: 登録時の音素列整合性チェック閾値（正規化編集距離）。
+                None の場合は音素整合性チェックを無効化。
         """
         self._threshold = threshold
         self._min_speech_seconds = min_speech_seconds
         self._min_unique_phonemes = min_unique_phonemes
+        self._phoneme_threshold = phoneme_threshold
 
     @property
     def threshold(self) -> float:
@@ -88,10 +110,41 @@ class PassphraseAuth:
         """
         return PassphraseAuthVerifier(self, embedding)
 
-    def extract_passphrase_embedding(self, audio: AudioInput) -> Embedding:
-        """音声入力から検証済み埋め込みベクトルを抽出する。
+    def extract_passphrase(self, audio: AudioInput) -> PassphraseExtractionResult:
+        """音声入力から検証済み埋め込みベクトルと音素列を抽出する。
 
         音声読み込み → VAD → 発話時間チェック → 音素検証 → 埋め込み抽出。
+
+        Args:
+            audio: 音声入力（bytes / str / Path）。
+
+        Returns:
+            埋め込みベクトルと音素列。
+
+        Raises:
+            EmptyAudioError: 音声区間が検出されなかった場合。
+            InsufficientDurationError: 発話時間が不足の場合。
+            InsufficientPhonemeError: 音素多様性が不足の場合。
+        """
+        audio_data = load_audio(audio)
+        segments = detect_speech(audio_data)
+        speech = extract_speech(segments)
+        validate_audio(speech, min_seconds=self._min_speech_seconds)
+        phonemes: list[str] = []
+        if self._min_unique_phonemes is not None or self._phoneme_threshold is not None:
+            result = transcribe(speech)
+            if self._min_unique_phonemes is not None:
+                info = validate_passphrase(
+                    result.text, min_unique_phonemes=self._min_unique_phonemes
+                )
+            else:
+                info = analyze_passphrase(result.text)
+            phonemes = info.phonemes
+        embedding = extract_embedding(speech)
+        return PassphraseExtractionResult(embedding=embedding, phonemes=phonemes)
+
+    def extract_passphrase_embedding(self, audio: AudioInput) -> Embedding:
+        """音声入力から検証済み埋め込みベクトルを抽出する（後方互換）。
 
         Args:
             audio: 音声入力（bytes / str / Path）。
@@ -104,26 +157,20 @@ class PassphraseAuth:
             InsufficientDurationError: 発話時間が不足の場合。
             InsufficientPhonemeError: 音素多様性が不足の場合。
         """
-        audio_data = load_audio(audio)
-        segments = detect_speech(audio_data)
-        speech = extract_speech(segments)
-        validate_audio(speech, min_seconds=self._min_speech_seconds)
-        if self._min_unique_phonemes is not None:
-            result = transcribe(speech)
-            validate_passphrase(result.text, min_unique_phonemes=self._min_unique_phonemes)
-        return extract_embedding(speech)
+        return self.extract_passphrase(audio).embedding
 
 
 class PassphraseAuthEnroller:
     """声紋登録 (Enroller)。
 
-    音声サンプルを蓄積し、平均埋め込みベクトルを算出する。
+    音声サンプルを蓄積し、平均埋め込みベクトルと基準音素列を算出する。
     ``PassphraseAuth.create_enroller()`` から生成する。
     """
 
     def __init__(self, auth: PassphraseAuth) -> None:
         self._auth = auth
         self._embeddings: list[Embedding] = []
+        self._phonemes: list[list[str]] = []
 
     def add_sample(self, audio: AudioInput) -> None:
         """音声サンプルを蓄積する。
@@ -136,19 +183,44 @@ class PassphraseAuthEnroller:
             InsufficientDurationError: 発話時間が不足の場合。
             InsufficientPhonemeError: 音素多様性が不足の場合。
         """
-        embedding = self._auth.extract_passphrase_embedding(audio)
-        self._embeddings.append(embedding)
+        result = self._auth.extract_passphrase(audio)
+        self._embeddings.append(result.embedding)
+        self._phonemes.append(result.phonemes)
 
-    def enroll(self) -> Embedding:
-        """蓄積サンプルの平均埋め込みベクトルを返す。
+    def enroll(self) -> EnrollmentResult:
+        """蓄積サンプルの平均埋め込みベクトルと基準音素列を返す。
 
         Raises:
             ValueError: サンプルが蓄積されていない場合。
+            PassphraseEnrollmentError: 音素列の整合性チェックに失敗した場合。
         """
         if not self._embeddings:
             raise ValueError("サンプルが蓄積されていません")
         mean_values = np.mean([e.values for e in self._embeddings], axis=0)
-        return Embedding(values=mean_values)
+        embedding = Embedding(values=mean_values)
+        phonemes: list[str] = []
+        if self._auth._phoneme_threshold is not None:
+            phonemes = self._select_reference_phonemes()
+        return EnrollmentResult(embedding=embedding, phonemes=phonemes)
+
+    def _select_reference_phonemes(self) -> list[str]:
+        """メドイドによる基準音素列を決定する。
+
+        Raises:
+            PassphraseEnrollmentError: 音素列の整合性チェックに失敗した場合。
+        """
+        distances = pairwise_distances(self._phonemes)
+        threshold = self._auth._phoneme_threshold
+        assert threshold is not None
+        for i in range(len(self._phonemes)):
+            for j in range(i + 1, len(self._phonemes)):
+                if distances[i][j] > threshold:
+                    raise PassphraseEnrollmentError(
+                        f"音素列の不整合: サンプル {i} と {j} の距離 "
+                        f"{distances[i][j]:.3f} が閾値 {threshold} を超えています"
+                    )
+        medoid_index = select_medoid(distances)
+        return self._phonemes[medoid_index]
 
     @property
     def sample_count(self) -> int:

@@ -35,9 +35,9 @@ class TestPassphraseAuthIntegration:
         """登録→本人認証で accepted=True。"""
         enroller = auth.create_enroller()
         enroller.add_sample(FIXTURES_DIR / "speaker_a_enroll.mp3")
-        embedding = enroller.enroll()
+        result = enroller.enroll()
 
-        verifier = auth.create_verifier(embedding)
+        verifier = auth.create_verifier(result.embedding)
         result = verifier.verify(FIXTURES_DIR / "speaker_a_verify.mp3")
         assert result.accepted is True
         assert result.score > auth.threshold
@@ -52,9 +52,9 @@ class TestPassphraseAuthIntegration:
         """登録→他人認証で accepted=False。"""
         enroller = auth.create_enroller()
         enroller.add_sample(FIXTURES_DIR / "speaker_a_enroll.mp3")
-        embedding = enroller.enroll()
+        result = enroller.enroll()
 
-        verifier = auth.create_verifier(embedding)
+        verifier = auth.create_verifier(result.embedding)
         result = verifier.verify(FIXTURES_DIR / other_speaker)
         assert result.accepted is False
         assert result.score < auth.threshold
@@ -69,9 +69,9 @@ class TestPassphraseAuthIntegration:
         """本人のスコアが他人のスコアより高い。"""
         enroller = auth.create_enroller()
         enroller.add_sample(FIXTURES_DIR / "speaker_a_enroll.mp3")
-        embedding = enroller.enroll()
+        result = enroller.enroll()
 
-        verifier = auth.create_verifier(embedding)
+        verifier = auth.create_verifier(result.embedding)
         same_result = verifier.verify(FIXTURES_DIR / "speaker_a_verify.mp3")
         diff_result = verifier.verify(FIXTURES_DIR / other_speaker)
         assert same_result.score > diff_result.score
@@ -82,9 +82,9 @@ class TestPassphraseAuthIntegration:
 
         enroller = auth.create_enroller()
         enroller.add_sample(FIXTURES_DIR / "speaker_a_enroll.mp3")
-        embedding = enroller.enroll()
+        enrollment = enroller.enroll()
 
-        restored = Embedding.from_bytes(embedding.to_bytes())
+        restored = Embedding.from_bytes(enrollment.embedding.to_bytes())
         verifier = auth.create_verifier(restored)
         result = verifier.verify(FIXTURES_DIR / "speaker_a_verify.mp3")
         assert result.accepted is True
