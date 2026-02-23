@@ -197,8 +197,8 @@ class TestPassphraseAuthVerifier:
 
         verifier = auth.create_verifier(enrolled)
         result = verifier.verify(audio)
-        assert result.accepted is True
-        assert result.score == pytest.approx(1.0)
+        assert result.voiceprint_accepted is True
+        assert result.voiceprint_score == pytest.approx(1.0)
 
     @patch("voice_auth_engine.passphrase_auth.load_audio")
     @patch("voice_auth_engine.passphrase_auth.extract_speech")
@@ -222,8 +222,8 @@ class TestPassphraseAuthVerifier:
 
         verifier = auth.create_verifier(enrolled)
         result = verifier.verify(audio)
-        assert result.accepted is False
-        assert result.score == pytest.approx(0.0)
+        assert result.voiceprint_accepted is False
+        assert result.voiceprint_score == pytest.approx(0.0)
 
     @patch("voice_auth_engine.passphrase_auth.load_audio")
     @patch("voice_auth_engine.passphrase_auth.extract_speech")
@@ -475,9 +475,9 @@ class TestPassphraseAuthVerifierPhonemes:
         verifier = auth_with_phoneme_gate.create_verifier(enrolled, phoneme)
         result = verifier.verify(audio)
 
-        assert result.accepted is True
+        assert result.voiceprint_accepted is True
         assert result.passphrase_accepted is True
-        assert result.phoneme_score == pytest.approx(0.0)
+        assert result.passphrase_score == pytest.approx(0.0)
 
     @patch("voice_auth_engine.passphrase_auth.extract_phonemes")
     @patch("voice_auth_engine.passphrase_auth.transcribe")
@@ -511,10 +511,10 @@ class TestPassphraseAuthVerifierPhonemes:
         verifier = auth_with_phoneme_gate.create_verifier(enrolled, phoneme)
         result = verifier.verify(audio)
 
-        assert result.accepted is False
+        assert result.voiceprint_accepted is False
         assert result.passphrase_accepted is False
-        assert result.phoneme_score is not None
-        assert result.phoneme_score > 0.3
+        assert result.passphrase_score is not None
+        assert result.passphrase_score > 0.3
 
     @patch("voice_auth_engine.passphrase_auth.extract_phonemes")
     @patch("voice_auth_engine.passphrase_auth.transcribe")
@@ -548,9 +548,9 @@ class TestPassphraseAuthVerifierPhonemes:
         verifier = auth_with_phoneme_gate.create_verifier(enrolled, phoneme)
         result = verifier.verify(audio)
 
-        assert result.accepted is False
+        assert result.voiceprint_accepted is False
         assert result.passphrase_accepted is True
-        assert result.score == pytest.approx(0.0)
+        assert result.voiceprint_score == pytest.approx(0.0)
 
     @patch("voice_auth_engine.passphrase_auth.load_audio")
     @patch("voice_auth_engine.passphrase_auth.extract_speech")
@@ -575,6 +575,6 @@ class TestPassphraseAuthVerifierPhonemes:
         verifier = auth.create_verifier(enrolled)
         result = verifier.verify(audio)
 
-        assert result.accepted is True
-        assert result.phoneme_score is None
+        assert result.voiceprint_accepted is True
+        assert result.passphrase_score is None
         assert result.passphrase_accepted is None

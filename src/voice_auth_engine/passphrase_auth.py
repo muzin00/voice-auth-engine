@@ -40,10 +40,10 @@ class EnrollmentResult(NamedTuple):
 class VerificationResult(NamedTuple):
     """照合結果。"""
 
-    accepted: bool  # 受理/拒否
-    score: float  # コサイン類似度 [-1.0, 1.0]
-    phoneme_score: float | None = None  # 正規化編集距離 [0.0, 1.0]
+    voiceprint_accepted: bool  # 受理/拒否
+    voiceprint_score: float  # コサイン類似度 [-1.0, 1.0]
     passphrase_accepted: bool | None = None  # 音素照合の受理/拒否
+    passphrase_score: float | None = None  # 正規化編集距離 [0.0, 1.0]
 
 
 class PassphraseAuth:
@@ -68,8 +68,8 @@ class PassphraseAuth:
         embedding = Embedding.from_bytes(saved)
         verifier = auth.create_verifier(embedding)
         result = verifier.verify(audio_bytes)
-        result.accepted  # True/False
-        result.score     # 0.85
+        result.voiceprint_accepted  # True/False
+        result.voiceprint_score     # 0.85
     """
 
     def __init__(
@@ -248,14 +248,14 @@ class PassphraseAuthVerifier:
         speaker_accepted = score >= self._auth.threshold
 
         if self._phoneme is not None and self._auth._phoneme_threshold is not None:
-            phoneme_score = normalized_edit_distance(self._phoneme.values, result.phoneme.values)
-            passphrase_accepted = phoneme_score <= self._auth._phoneme_threshold
-            accepted = speaker_accepted and passphrase_accepted
+            passphrase_score = normalized_edit_distance(self._phoneme.values, result.phoneme.values)
+            passphrase_accepted = passphrase_score <= self._auth._phoneme_threshold
+            voiceprint_accepted = speaker_accepted and passphrase_accepted
             return VerificationResult(
-                accepted=accepted,
-                score=score,
-                phoneme_score=phoneme_score,
+                voiceprint_accepted=voiceprint_accepted,
+                voiceprint_score=score,
+                passphrase_score=passphrase_score,
                 passphrase_accepted=passphrase_accepted,
             )
 
-        return VerificationResult(accepted=speaker_accepted, score=score)
+        return VerificationResult(voiceprint_accepted=speaker_accepted, voiceprint_score=score)
