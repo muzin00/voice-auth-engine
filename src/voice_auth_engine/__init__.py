@@ -32,6 +32,7 @@ from voice_auth_engine.passphrase_auth import (
     PassphraseAuthVerifier,
     PassphraseEnrollmentError,
     PassphraseExtractionResult,
+    VerificationResult,
 )
 from voice_auth_engine.passphrase_validator import (
     EmptyPassphraseError,
@@ -79,6 +80,7 @@ __all__ = [
     "PassphraseAuthVerifier",
     "PassphraseEnrollmentError",
     "PassphraseExtractionResult",
+    "VerificationResult",
     "PassphraseInfo",
     "PassphraseValidationError",
     "RecognitionError",

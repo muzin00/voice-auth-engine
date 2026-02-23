@@ -436,3 +436,162 @@ class TestPassphraseAuthPhonemes:
         enroller.add_sample(audio)
         result = enroller.enroll()
         assert result.phonemes == []
+
+
+class TestPassphraseAuthVerifierPhonemes:
+    """音素照合ゲート付き Verifier のテスト。"""
+
+    @pytest.fixture
+    def auth_with_phoneme_gate(self) -> PassphraseAuth:
+        """phoneme_threshold 有効の PassphraseAuth。"""
+        return PassphraseAuth(
+            threshold=0.5,
+            min_speech_seconds=0.1,
+            min_unique_phonemes=None,
+            phoneme_threshold=0.3,
+        )
+
+    @patch("voice_auth_engine.passphrase_auth.analyze_passphrase")
+    @patch("voice_auth_engine.passphrase_auth.transcribe")
+    @patch("voice_auth_engine.passphrase_auth.extract_embedding")
+    @patch("voice_auth_engine.passphrase_auth.extract_speech")
+    @patch("voice_auth_engine.passphrase_auth.detect_speech")
+    @patch("voice_auth_engine.passphrase_auth.load_audio")
+    def test_phoneme_match_accepted(
+        self,
+        mock_load: MagicMock,
+        mock_detect: MagicMock,
+        mock_extract_sp: MagicMock,
+        mock_extract_emb: MagicMock,
+        mock_transcribe: MagicMock,
+        mock_analyze: MagicMock,
+        auth_with_phoneme_gate: PassphraseAuth,
+    ) -> None:
+        """話者一致 + 音素一致で accepted=True。"""
+        audio = make_audio(1.0)
+        mock_load.return_value = audio
+        mock_detect.return_value = make_segments(audio)
+        mock_extract_sp.return_value = audio
+        mock_extract_emb.return_value = make_embedding([1.0, 0.0, 0.0])
+        mock_transcribe.return_value = MagicMock(text="test")
+        mock_analyze.return_value = PassphraseInfo(
+            text="test",
+            phonemes=["a", "i", "u", "e", "o"],
+            unique_phonemes={"a", "i", "u", "e", "o"},
+            unique_count=5,
+        )
+
+        enrolled = make_embedding([1.0, 0.0, 0.0])
+        phonemes = ["a", "i", "u", "e", "o"]
+        verifier = auth_with_phoneme_gate.create_verifier(enrolled, phonemes)
+        result = verifier.verify(audio)
+
+        assert result.accepted is True
+        assert result.passphrase_accepted is True
+        assert result.phoneme_score == pytest.approx(0.0)
+
+    @patch("voice_auth_engine.passphrase_auth.analyze_passphrase")
+    @patch("voice_auth_engine.passphrase_auth.transcribe")
+    @patch("voice_auth_engine.passphrase_auth.extract_embedding")
+    @patch("voice_auth_engine.passphrase_auth.extract_speech")
+    @patch("voice_auth_engine.passphrase_auth.detect_speech")
+    @patch("voice_auth_engine.passphrase_auth.load_audio")
+    def test_phoneme_mismatch_rejected(
+        self,
+        mock_load: MagicMock,
+        mock_detect: MagicMock,
+        mock_extract_sp: MagicMock,
+        mock_extract_emb: MagicMock,
+        mock_transcribe: MagicMock,
+        mock_analyze: MagicMock,
+        auth_with_phoneme_gate: PassphraseAuth,
+    ) -> None:
+        """話者一致 + 音素不一致で accepted=False。"""
+        audio = make_audio(1.0)
+        mock_load.return_value = audio
+        mock_detect.return_value = make_segments(audio)
+        mock_extract_sp.return_value = audio
+        mock_extract_emb.return_value = make_embedding([1.0, 0.0, 0.0])
+        mock_transcribe.return_value = MagicMock(text="test")
+        mock_analyze.return_value = PassphraseInfo(
+            text="test",
+            phonemes=["k", "a", "k", "i", "k"],
+            unique_phonemes={"k", "a", "i"},
+            unique_count=3,
+        )
+
+        enrolled = make_embedding([1.0, 0.0, 0.0])
+        phonemes = ["a", "i", "u", "e", "o"]
+        verifier = auth_with_phoneme_gate.create_verifier(enrolled, phonemes)
+        result = verifier.verify(audio)
+
+        assert result.accepted is False
+        assert result.passphrase_accepted is False
+        assert result.phoneme_score is not None
+        assert result.phoneme_score > 0.3
+
+    @patch("voice_auth_engine.passphrase_auth.analyze_passphrase")
+    @patch("voice_auth_engine.passphrase_auth.transcribe")
+    @patch("voice_auth_engine.passphrase_auth.extract_embedding")
+    @patch("voice_auth_engine.passphrase_auth.extract_speech")
+    @patch("voice_auth_engine.passphrase_auth.detect_speech")
+    @patch("voice_auth_engine.passphrase_auth.load_audio")
+    def test_speaker_mismatch_with_phoneme_match_rejected(
+        self,
+        mock_load: MagicMock,
+        mock_detect: MagicMock,
+        mock_extract_sp: MagicMock,
+        mock_extract_emb: MagicMock,
+        mock_transcribe: MagicMock,
+        mock_analyze: MagicMock,
+        auth_with_phoneme_gate: PassphraseAuth,
+    ) -> None:
+        """話者不一致 + 音素一致でも accepted=False。"""
+        audio = make_audio(1.0)
+        mock_load.return_value = audio
+        mock_detect.return_value = make_segments(audio)
+        mock_extract_sp.return_value = audio
+        mock_extract_emb.return_value = make_embedding([0.0, 1.0, 0.0])
+        mock_transcribe.return_value = MagicMock(text="test")
+        mock_analyze.return_value = PassphraseInfo(
+            text="test",
+            phonemes=["a", "i", "u", "e", "o"],
+            unique_phonemes={"a", "i", "u", "e", "o"},
+            unique_count=5,
+        )
+
+        enrolled = make_embedding([1.0, 0.0, 0.0])
+        phonemes = ["a", "i", "u", "e", "o"]
+        verifier = auth_with_phoneme_gate.create_verifier(enrolled, phonemes)
+        result = verifier.verify(audio)
+
+        assert result.accepted is False
+        assert result.passphrase_accepted is True
+        assert result.score == pytest.approx(0.0)
+
+    @patch("voice_auth_engine.passphrase_auth.load_audio")
+    @patch("voice_auth_engine.passphrase_auth.extract_speech")
+    @patch("voice_auth_engine.passphrase_auth.detect_speech")
+    @patch("voice_auth_engine.passphrase_auth.extract_embedding")
+    def test_phonemes_none_backward_compat(
+        self,
+        mock_extract_emb: MagicMock,
+        mock_detect: MagicMock,
+        mock_extract_sp: MagicMock,
+        mock_load: MagicMock,
+        auth: PassphraseAuth,
+    ) -> None:
+        """phonemes=None で音素照合無効（後方互換）。"""
+        audio = make_audio(1.0)
+        mock_load.return_value = audio
+        mock_detect.return_value = make_segments(audio)
+        mock_extract_sp.return_value = audio
+        mock_extract_emb.return_value = make_embedding([1.0, 0.0, 0.0])
+
+        enrolled = make_embedding([1.0, 0.0, 0.0])
+        verifier = auth.create_verifier(enrolled)
+        result = verifier.verify(audio)
+
+        assert result.accepted is True
+        assert result.phoneme_score is None
+        assert result.passphrase_accepted is None
