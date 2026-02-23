@@ -17,7 +17,7 @@ from voice_auth_engine.passphrase_auth import (
     PassphraseAuthVerifier,
     PassphraseEnrollmentError,
 )
-from voice_auth_engine.passphrase_validator import PassphraseInfo
+from voice_auth_engine.phoneme_extractor import Phoneme
 
 from .audio_factory import make_audio, make_embedding, make_segments
 
@@ -275,7 +275,7 @@ class TestPassphraseAuthPhonemes:
         mock_extract_sp: MagicMock,
         mock_extract_emb: MagicMock,
         mock_transcribe: MagicMock,
-        mock_analyze: MagicMock,
+        mock_extract_phonemes: MagicMock,
         *,
         phoneme_lists: list[list[str]],
     ) -> AudioData:
@@ -288,18 +288,10 @@ class TestPassphraseAuthPhonemes:
         mock_transcribe.side_effect = [
             MagicMock(text=f"text{i}") for i in range(len(phoneme_lists))
         ]
-        mock_analyze.side_effect = [
-            PassphraseInfo(
-                text=f"text{i}",
-                phonemes=p,
-                unique_phonemes=set(p),
-                unique_count=len(set(p)),
-            )
-            for i, p in enumerate(phoneme_lists)
-        ]
+        mock_extract_phonemes.side_effect = [Phoneme(values=p) for p in phoneme_lists]
         return audio
 
-    @patch("voice_auth_engine.passphrase_auth.analyze_passphrase")
+    @patch("voice_auth_engine.passphrase_auth.extract_phonemes")
     @patch("voice_auth_engine.passphrase_auth.transcribe")
     @patch("voice_auth_engine.passphrase_auth.extract_embedding")
     @patch("voice_auth_engine.passphrase_auth.extract_speech")
@@ -312,7 +304,7 @@ class TestPassphraseAuthPhonemes:
         mock_extract_sp: MagicMock,
         mock_extract_emb: MagicMock,
         mock_transcribe: MagicMock,
-        mock_analyze: MagicMock,
+        mock_extract_phonemes: MagicMock,
         auth_with_phonemes: PassphraseAuth,
     ) -> None:
         """extract_passphrase が音素列を含む結果を返す。"""
@@ -323,14 +315,14 @@ class TestPassphraseAuthPhonemes:
             mock_extract_sp,
             mock_extract_emb,
             mock_transcribe,
-            mock_analyze,
+            mock_extract_phonemes,
             phoneme_lists=[phonemes],
         )
         result = auth_with_phonemes.extract_passphrase(audio)
-        assert result.phonemes == phonemes
+        assert result.phoneme.values == phonemes
         assert isinstance(result.embedding, Embedding)
 
-    @patch("voice_auth_engine.passphrase_auth.analyze_passphrase")
+    @patch("voice_auth_engine.passphrase_auth.extract_phonemes")
     @patch("voice_auth_engine.passphrase_auth.transcribe")
     @patch("voice_auth_engine.passphrase_auth.extract_embedding")
     @patch("voice_auth_engine.passphrase_auth.extract_speech")
@@ -343,7 +335,7 @@ class TestPassphraseAuthPhonemes:
         mock_extract_sp: MagicMock,
         mock_extract_emb: MagicMock,
         mock_transcribe: MagicMock,
-        mock_analyze: MagicMock,
+        mock_extract_phonemes: MagicMock,
         auth_with_phonemes: PassphraseAuth,
     ) -> None:
         """enroll() がメドイドで選ばれた基準音素列を返す。"""
@@ -361,7 +353,7 @@ class TestPassphraseAuthPhonemes:
             mock_extract_sp,
             mock_extract_emb,
             mock_transcribe,
-            mock_analyze,
+            mock_extract_phonemes,
             phoneme_lists=phoneme_lists,
         )
         enroller = auth_with_phonemes.create_enroller()
@@ -371,7 +363,7 @@ class TestPassphraseAuthPhonemes:
         assert isinstance(result, EnrollmentResult)
         assert result.phonemes == ["a", "i", "u", "e", "o"]
 
-    @patch("voice_auth_engine.passphrase_auth.analyze_passphrase")
+    @patch("voice_auth_engine.passphrase_auth.extract_phonemes")
     @patch("voice_auth_engine.passphrase_auth.transcribe")
     @patch("voice_auth_engine.passphrase_auth.extract_embedding")
     @patch("voice_auth_engine.passphrase_auth.extract_speech")
@@ -384,7 +376,7 @@ class TestPassphraseAuthPhonemes:
         mock_extract_sp: MagicMock,
         mock_extract_emb: MagicMock,
         mock_transcribe: MagicMock,
-        mock_analyze: MagicMock,
+        mock_extract_phonemes: MagicMock,
     ) -> None:
         """音素列の距離が閾値を超えると PassphraseEnrollmentError。"""
         auth = PassphraseAuth(
@@ -404,7 +396,7 @@ class TestPassphraseAuthPhonemes:
             mock_extract_sp,
             mock_extract_emb,
             mock_transcribe,
-            mock_analyze,
+            mock_extract_phonemes,
             phoneme_lists=phoneme_lists,
         )
         enroller = auth.create_enroller()
@@ -451,7 +443,7 @@ class TestPassphraseAuthVerifierPhonemes:
             phoneme_threshold=0.3,
         )
 
-    @patch("voice_auth_engine.passphrase_auth.analyze_passphrase")
+    @patch("voice_auth_engine.passphrase_auth.extract_phonemes")
     @patch("voice_auth_engine.passphrase_auth.transcribe")
     @patch("voice_auth_engine.passphrase_auth.extract_embedding")
     @patch("voice_auth_engine.passphrase_auth.extract_speech")
@@ -464,7 +456,7 @@ class TestPassphraseAuthVerifierPhonemes:
         mock_extract_sp: MagicMock,
         mock_extract_emb: MagicMock,
         mock_transcribe: MagicMock,
-        mock_analyze: MagicMock,
+        mock_extract_phonemes: MagicMock,
         auth_with_phoneme_gate: PassphraseAuth,
     ) -> None:
         """話者一致 + 音素一致で accepted=True。"""
@@ -474,11 +466,8 @@ class TestPassphraseAuthVerifierPhonemes:
         mock_extract_sp.return_value = audio
         mock_extract_emb.return_value = make_embedding([1.0, 0.0, 0.0])
         mock_transcribe.return_value = MagicMock(text="test")
-        mock_analyze.return_value = PassphraseInfo(
-            text="test",
-            phonemes=["a", "i", "u", "e", "o"],
-            unique_phonemes={"a", "i", "u", "e", "o"},
-            unique_count=5,
+        mock_extract_phonemes.return_value = Phoneme(
+            values=["a", "i", "u", "e", "o"],
         )
 
         enrolled = make_embedding([1.0, 0.0, 0.0])
@@ -490,7 +479,7 @@ class TestPassphraseAuthVerifierPhonemes:
         assert result.passphrase_accepted is True
         assert result.phoneme_score == pytest.approx(0.0)
 
-    @patch("voice_auth_engine.passphrase_auth.analyze_passphrase")
+    @patch("voice_auth_engine.passphrase_auth.extract_phonemes")
     @patch("voice_auth_engine.passphrase_auth.transcribe")
     @patch("voice_auth_engine.passphrase_auth.extract_embedding")
     @patch("voice_auth_engine.passphrase_auth.extract_speech")
@@ -503,7 +492,7 @@ class TestPassphraseAuthVerifierPhonemes:
         mock_extract_sp: MagicMock,
         mock_extract_emb: MagicMock,
         mock_transcribe: MagicMock,
-        mock_analyze: MagicMock,
+        mock_extract_phonemes: MagicMock,
         auth_with_phoneme_gate: PassphraseAuth,
     ) -> None:
         """話者一致 + 音素不一致で accepted=False。"""
@@ -513,11 +502,8 @@ class TestPassphraseAuthVerifierPhonemes:
         mock_extract_sp.return_value = audio
         mock_extract_emb.return_value = make_embedding([1.0, 0.0, 0.0])
         mock_transcribe.return_value = MagicMock(text="test")
-        mock_analyze.return_value = PassphraseInfo(
-            text="test",
-            phonemes=["k", "a", "k", "i", "k"],
-            unique_phonemes={"k", "a", "i"},
-            unique_count=3,
+        mock_extract_phonemes.return_value = Phoneme(
+            values=["k", "a", "k", "i", "k"],
         )
 
         enrolled = make_embedding([1.0, 0.0, 0.0])
@@ -530,7 +516,7 @@ class TestPassphraseAuthVerifierPhonemes:
         assert result.phoneme_score is not None
         assert result.phoneme_score > 0.3
 
-    @patch("voice_auth_engine.passphrase_auth.analyze_passphrase")
+    @patch("voice_auth_engine.passphrase_auth.extract_phonemes")
     @patch("voice_auth_engine.passphrase_auth.transcribe")
     @patch("voice_auth_engine.passphrase_auth.extract_embedding")
     @patch("voice_auth_engine.passphrase_auth.extract_speech")
@@ -543,7 +529,7 @@ class TestPassphraseAuthVerifierPhonemes:
         mock_extract_sp: MagicMock,
         mock_extract_emb: MagicMock,
         mock_transcribe: MagicMock,
-        mock_analyze: MagicMock,
+        mock_extract_phonemes: MagicMock,
         auth_with_phoneme_gate: PassphraseAuth,
     ) -> None:
         """話者不一致 + 音素一致でも accepted=False。"""
@@ -553,11 +539,8 @@ class TestPassphraseAuthVerifierPhonemes:
         mock_extract_sp.return_value = audio
         mock_extract_emb.return_value = make_embedding([0.0, 1.0, 0.0])
         mock_transcribe.return_value = MagicMock(text="test")
-        mock_analyze.return_value = PassphraseInfo(
-            text="test",
-            phonemes=["a", "i", "u", "e", "o"],
-            unique_phonemes={"a", "i", "u", "e", "o"},
-            unique_count=5,
+        mock_extract_phonemes.return_value = Phoneme(
+            values=["a", "i", "u", "e", "o"],
         )
 
         enrolled = make_embedding([1.0, 0.0, 0.0])

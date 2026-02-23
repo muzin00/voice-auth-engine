@@ -15,7 +15,8 @@ from voice_auth_engine.math import (
     pairwise_distances,
     select_medoid,
 )
-from voice_auth_engine.passphrase_validator import analyze_passphrase, validate_passphrase
+from voice_auth_engine.passphrase_validator import validate_passphrase
+from voice_auth_engine.phoneme_extractor import Phoneme, extract_phonemes
 from voice_auth_engine.speech_detector import detect_speech, extract_speech
 from voice_auth_engine.speech_recognizer import transcribe
 
@@ -32,7 +33,7 @@ class PassphraseExtractionResult(NamedTuple):
     """パスフレーズ抽出結果。"""
 
     embedding: Embedding
-    phonemes: list[str]
+    phoneme: Phoneme
 
 
 class EnrollmentResult(NamedTuple):
@@ -140,18 +141,15 @@ class PassphraseAuth:
         segments = detect_speech(audio_data)
         speech = extract_speech(segments)
         validate_audio(speech, min_seconds=self._min_speech_seconds)
-        phonemes: list[str] = []
         if self._min_unique_phonemes is not None or self._phoneme_threshold is not None:
             result = transcribe(speech)
+            phoneme = extract_phonemes(result.text)
             if self._min_unique_phonemes is not None:
-                info = validate_passphrase(
-                    result.text, min_unique_phonemes=self._min_unique_phonemes
-                )
-            else:
-                info = analyze_passphrase(result.text)
-            phonemes = info.phonemes
+                validate_passphrase(phoneme, min_unique_phonemes=self._min_unique_phonemes)
+        else:
+            phoneme = Phoneme(values=[])
         embedding = extract_embedding(speech)
-        return PassphraseExtractionResult(embedding=embedding, phonemes=phonemes)
+        return PassphraseExtractionResult(embedding=embedding, phoneme=phoneme)
 
     def extract_passphrase_embedding(self, audio: AudioInput) -> Embedding:
         """音声入力から検証済み埋め込みベクトルを抽出する（後方互換）。
@@ -195,7 +193,7 @@ class PassphraseAuthEnroller:
         """
         result = self._auth.extract_passphrase(audio)
         self._embeddings.append(result.embedding)
-        self._phonemes.append(result.phonemes)
+        self._phonemes.append(result.phoneme.values)
 
     def enroll(self) -> EnrollmentResult:
         """蓄積サンプルの平均埋め込みベクトルと基準音素列を返す。
@@ -271,7 +269,7 @@ class PassphraseAuthVerifier:
         speaker_accepted = score >= self._auth.threshold
 
         if self._phonemes and self._auth._phoneme_threshold is not None:
-            phoneme_score = normalized_edit_distance(self._phonemes, result.phonemes)
+            phoneme_score = normalized_edit_distance(self._phonemes, result.phoneme.values)
             passphrase_accepted = phoneme_score <= self._auth._phoneme_threshold
             accepted = speaker_accepted and passphrase_accepted
             return VerificationResult(
