@@ -3,6 +3,7 @@ name: Build pyopenjtalk wheels
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 env:
   PYOPENJTALK_VERSION: "0.4.1"
@@ -43,6 +44,7 @@ jobs:
           path: wheelhouse/*.whl
 
   upload-wheels:
+    if: startsWith(github.ref, 'refs/tags/')
     needs: [build-wheels]
     runs-on: ubuntu-latest
     permissions:
