@@ -1,0 +1,60 @@
+name: Build pyopenjtalk wheels
+
+on:
+  push:
+    tags: ["v*"]
+
+env:
+  PYOPENJTALK_VERSION: "0.4.1"
+
+jobs:
+  build-wheels:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            cibw_build: "cp313-manylinux_x86_64"
+          - os: ubuntu-latest
+            cibw_build: "cp313-musllinux_x86_64"
+          - os: macos-14
+            cibw_build: "cp313-macosx_arm64"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Download pyopenjtalk source
+        run: pip download --no-binary pyopenjtalk --no-deps "pyopenjtalk==$PYOPENJTALK_VERSION" -d sdist
+
+      - name: Extract source
+        run: |
+          cd sdist
+          tar xzf "pyopenjtalk-$PYOPENJTALK_VERSION.tar.gz"
+          mv "pyopenjtalk-$PYOPENJTALK_VERSION" ../pyopenjtalk-src
+
+      - uses: pypa/cibuildwheel@v2.23
+        with:
+          package-dir: pyopenjtalk-src
+        env:
+          CIBW_BUILD: ${{ matrix.cibw_build }}
+          CIBW_BEFORE_ALL_LINUX: apk add build-base || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.cibw_build }}
+          path: wheelhouse/*.whl
+
+  upload-wheels:
+    needs: [build-wheels]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: wheels
+          pattern: wheel-*
+          merge-multiple: true
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: wheels/*.whl
