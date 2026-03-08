@@ -16,14 +16,12 @@ jobs:
         include:
           - os: ubuntu-latest
             cibw_build: "cp313-manylinux_x86_64"
-          - os: ubuntu-latest
-            cibw_build: "cp313-musllinux_x86_64"
-          - os: macos-14
-            cibw_build: "cp313-macosx_arm64"
     runs-on: ${{ matrix.os }}
     steps:
+      - uses: astral-sh/setup-uv@v6
+
       - name: Download pyopenjtalk source
-        run: pip download --no-binary pyopenjtalk --no-deps "pyopenjtalk==$PYOPENJTALK_VERSION" -d sdist
+        run: uv pip download --no-binary pyopenjtalk --no-deps "pyopenjtalk==$PYOPENJTALK_VERSION" -d sdist
 
       - name: Extract source
         run: |
@@ -36,7 +34,6 @@ jobs:
           package-dir: pyopenjtalk-src
         env:
           CIBW_BUILD: ${{ matrix.cibw_build }}
-          CIBW_BEFORE_ALL_LINUX: apk add build-base || true
 
       - uses: actions/upload-artifact@v4
         with:
