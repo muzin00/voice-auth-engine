@@ -18,16 +18,13 @@ jobs:
             cibw_build: "cp313-manylinux_x86_64"
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: astral-sh/setup-uv@v6
-
       - name: Download pyopenjtalk source
-        run: uv pip download --no-binary pyopenjtalk --no-deps "pyopenjtalk==$PYOPENJTALK_VERSION" -d sdist
+        run: pip download --no-binary pyopenjtalk --no-deps "pyopenjtalk==$PYOPENJTALK_VERSION" -d sdist
 
       - name: Extract source
         run: |
-          cd sdist
-          tar xzf "pyopenjtalk-$PYOPENJTALK_VERSION.tar.gz"
-          mv "pyopenjtalk-$PYOPENJTALK_VERSION" ../pyopenjtalk-src
+          tar xzf "sdist/pyopenjtalk-$PYOPENJTALK_VERSION.tar.gz"
+          mv "pyopenjtalk-$PYOPENJTALK_VERSION" pyopenjtalk-src
 
       - uses: pypa/cibuildwheel@v2.23
         with:
