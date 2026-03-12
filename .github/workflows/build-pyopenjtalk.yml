@@ -3,7 +3,6 @@ name: Build pyopenjtalk wheels
 on:
   push:
     tags: ["v*"]
-  workflow_dispatch:
 
 env:
   PYOPENJTALK_VERSION: "0.4.1"
@@ -15,26 +14,39 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            cibw_build: "cp313-manylinux_x86_64"
+            arch: x86_64
+          # - os: ubuntu-latest
+          #   arch: aarch64
+          - os: macos-latest
+            arch: arm64
+          - os: macos-13
+            arch: x86_64
     runs-on: ${{ matrix.os }}
     steps:
       - name: Download pyopenjtalk source
-        run: pip download --no-binary pyopenjtalk --no-deps "pyopenjtalk==$PYOPENJTALK_VERSION" -d sdist
-
-      - name: Extract source
         run: |
+          pip download --no-binary pyopenjtalk --no-deps "pyopenjtalk==$PYOPENJTALK_VERSION" -d sdist
           tar xzf "sdist/pyopenjtalk-$PYOPENJTALK_VERSION.tar.gz"
           mv "pyopenjtalk-$PYOPENJTALK_VERSION" pyopenjtalk-src
 
-      - uses: pypa/cibuildwheel@v2.23
+      # - name: Set up QEMU
+      #   if: matrix.arch == 'aarch64'
+      #   uses: docker/setup-qemu-action@v3
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v3.4
         with:
           package-dir: pyopenjtalk-src
         env:
-          CIBW_BUILD: ${{ matrix.cibw_build }}
+          CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-*"
+          CIBW_SKIP: "*-musllinux_*"
+          CIBW_ARCHS: ${{ matrix.arch }}
+          CIBW_BEFORE_BUILD: "pip install setuptools wheel"
+          MACOSX_DEPLOYMENT_TARGET: "11.0"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: wheel-${{ matrix.cibw_build }}
+          name: wheel-${{ matrix.os }}-${{ matrix.arch }}
           path: wheelhouse/*.whl
 
   upload-wheels:
@@ -54,3 +66,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: wheels/*.whl
+          generate_release_notes: true
