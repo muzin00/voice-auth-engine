@@ -15,8 +15,8 @@ jobs:
         include:
           - os: ubuntu-latest
             arch: x86_64
-          - os: ubuntu-latest
-            arch: aarch64
+          # - os: ubuntu-latest
+          #   arch: aarch64
           - os: macos-latest
             arch: arm64
           - os: macos-13
@@ -29,9 +29,9 @@ jobs:
           tar xzf "sdist/pyopenjtalk-$PYOPENJTALK_VERSION.tar.gz"
           mv "pyopenjtalk-$PYOPENJTALK_VERSION" pyopenjtalk-src
 
-      - name: Set up QEMU
-        if: matrix.arch == 'aarch64'
-        uses: docker/setup-qemu-action@v3
+      # - name: Set up QEMU
+      #   if: matrix.arch == 'aarch64'
+      #   uses: docker/setup-qemu-action@v3
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.4
