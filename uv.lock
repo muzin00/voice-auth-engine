@@ -293,7 +293,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/58/74/ccd31c696f047ba38
 [[package]]
 name = "pyopenjtalk"
 version = "0.4.1"
-source = { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.3.0/pyopenjtalk-0.4.1-cp313-cp313-macosx_11_0_arm64.whl" }
+source = { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.4.0/pyopenjtalk-0.4.1-cp313-cp313-macosx_11_0_arm64.whl" }
 resolution-markers = [
     "platform_machine == 'arm64' and sys_platform == 'darwin'",
 ]
@@ -302,7 +302,7 @@ dependencies = [
     { name = "tqdm", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
 ]
 wheels = [
-    { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.3.0/pyopenjtalk-0.4.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:02626734d69efabce3c52983e0187d41be83d1523b8ca5686f317c23d76ae602" },
+    { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.4.0/pyopenjtalk-0.4.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:ef31297ffba0258138852873b6674f7b1bc85b290dbdfd6581b38eae0a630f13" },
 ]
 
 [package.metadata]
@@ -336,7 +336,7 @@ provides-extras = ["docs", "dev", "test", "marine"]
 [[package]]
 name = "pyopenjtalk"
 version = "0.4.1"
-source = { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.3.0/pyopenjtalk-0.4.1-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl" }
+source = { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.4.0/pyopenjtalk-0.4.1-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl" }
 resolution-markers = [
     "platform_machine == 'x86_64' and sys_platform == 'linux'",
 ]
@@ -345,7 +345,7 @@ dependencies = [
     { name = "tqdm", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
 wheels = [
-    { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.3.0/pyopenjtalk-0.4.1-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:7f9dd52c9b998abc38ec9d6df92c34f9d9893cbb43156d5b3dc75f8ab26a7424" },
+    { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.4.0/pyopenjtalk-0.4.1-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:508e0dddb2209bfa0a9993e55b8cce57eb266d2489f7cf4831568d1dc1e91a9d" },
 ]
 
 [package.metadata]
@@ -558,15 +558,15 @@ wheels = [
 
 [[package]]
 name = "voice-auth-engine"
-version = "0.4.0"
+version = "0.5.0"
 source = { editable = "." }
 dependencies = [
     { name = "av" },
     { name = "numpy" },
     { name = "platformdirs" },
     { name = "pyopenjtalk", version = "0.4.1", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine != 'arm64' and sys_platform == 'darwin') or (platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
-    { name = "pyopenjtalk", version = "0.4.1", source = { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.3.0/pyopenjtalk-0.4.1-cp313-cp313-macosx_11_0_arm64.whl" }, marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "pyopenjtalk", version = "0.4.1", source = { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.3.0/pyopenjtalk-0.4.1-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl" }, marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "pyopenjtalk", version = "0.4.1", source = { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.4.0/pyopenjtalk-0.4.1-cp313-cp313-macosx_11_0_arm64.whl" }, marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "pyopenjtalk", version = "0.4.1", source = { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.4.0/pyopenjtalk-0.4.1-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl" }, marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "sherpa-onnx" },
     { name = "sherpa-onnx-core" },
     { name = "tqdm" },
@@ -587,8 +587,8 @@ requires-dist = [
     { name = "numpy" },
     { name = "platformdirs" },
     { name = "pyopenjtalk", marker = "(platform_machine != 'arm64' and sys_platform == 'darwin') or (platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
-    { name = "pyopenjtalk", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'", url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.3.0/pyopenjtalk-0.4.1-cp313-cp313-macosx_11_0_arm64.whl" },
-    { name = "pyopenjtalk", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'", url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.3.0/pyopenjtalk-0.4.1-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl" },
+    { name = "pyopenjtalk", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'", url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.4.0/pyopenjtalk-0.4.1-cp313-cp313-macosx_11_0_arm64.whl" },
+    { name = "pyopenjtalk", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'", url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.4.0/pyopenjtalk-0.4.1-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl" },
     { name = "sherpa-onnx" },
     { name = "sherpa-onnx-core" },
     { name = "tqdm", specifier = ">=4.67.3" },
