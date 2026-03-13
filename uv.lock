@@ -1,6 +1,11 @@
 version = 1
 revision = 3
 requires-python = ">=3.13"
+resolution-markers = [
+    "platform_machine == 'arm64' and sys_platform == 'darwin'",
+    "platform_machine == 'x86_64' and sys_platform == 'linux'",
+    "(platform_machine != 'arm64' and sys_platform == 'darwin') or (platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')",
+]
 
 [[package]]
 name = "av"
@@ -276,11 +281,100 @@ wheels = [
 name = "pyopenjtalk"
 version = "0.4.1"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "(platform_machine != 'arm64' and sys_platform == 'darwin') or (platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')",
+]
 dependencies = [
-    { name = "numpy" },
-    { name = "tqdm" },
+    { name = "numpy", marker = "(platform_machine != 'arm64' and sys_platform == 'darwin') or (platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
+    { name = "tqdm", marker = "(platform_machine != 'arm64' and sys_platform == 'darwin') or (platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/58/74/ccd31c696f047ba381f9b11a504bf1199756c3f30f3de64e3eeb83e10b4a/pyopenjtalk-0.4.1.tar.gz", hash = "sha256:d5ada46f7fc2b52c1c79c273eb9668ff6ad7ab276a8db9d8be119ef93440f0dc", size = 1397999, upload-time = "2025-04-08T06:27:46.528Z" }
+
+[[package]]
+name = "pyopenjtalk"
+version = "0.4.1"
+source = { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.3.0/pyopenjtalk-0.4.1-cp313-cp313-macosx_11_0_arm64.whl" }
+resolution-markers = [
+    "platform_machine == 'arm64' and sys_platform == 'darwin'",
+]
+dependencies = [
+    { name = "numpy", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "tqdm", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+]
+wheels = [
+    { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.3.0/pyopenjtalk-0.4.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:02626734d69efabce3c52983e0187d41be83d1523b8ca5686f317c23d76ae602" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "black", marker = "extra == 'dev'", specifier = ">=19.19b0,<=20.8" },
+    { name = "click", marker = "extra == 'dev'", specifier = "<8.1.0" },
+    { name = "cython", marker = "extra == 'dev'", specifier = ">=0.29.16" },
+    { name = "flake8", marker = "extra == 'dev'", specifier = ">=3.7,<4" },
+    { name = "flake8-bugbear", marker = "extra == 'dev'" },
+    { name = "importlib-metadata", marker = "extra == 'dev'", specifier = "<5.0" },
+    { name = "importlib-resources", marker = "python_full_version < '3.9'" },
+    { name = "ipython", marker = "extra == 'docs'" },
+    { name = "isort", marker = "extra == 'dev'", specifier = ">=4.3,<5.2.0" },
+    { name = "jinja2", marker = "extra == 'docs'", specifier = ">=3.0.1" },
+    { name = "jupyter", marker = "extra == 'docs'" },
+    { name = "marine", marker = "extra == 'marine'", specifier = ">=0.0.5" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = "<=0.910" },
+    { name = "nbsphinx", marker = "extra == 'docs'", specifier = ">=0.8.6" },
+    { name = "numpy", specifier = ">=1.20.0" },
+    { name = "pandoc", marker = "extra == 'docs'" },
+    { name = "pysen", marker = "extra == 'dev'" },
+    { name = "pytest", marker = "extra == 'test'" },
+    { name = "scipy", marker = "extra == 'test'" },
+    { name = "sphinx-rtd-theme", marker = "extra == 'docs'" },
+    { name = "tqdm" },
+    { name = "types-decorator", marker = "extra == 'dev'" },
+    { name = "types-setuptools", marker = "extra == 'dev'" },
+]
+provides-extras = ["docs", "dev", "test", "marine"]
+
+[[package]]
+name = "pyopenjtalk"
+version = "0.4.1"
+source = { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.3.0/pyopenjtalk-0.4.1-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl" }
+resolution-markers = [
+    "platform_machine == 'x86_64' and sys_platform == 'linux'",
+]
+dependencies = [
+    { name = "numpy", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "tqdm", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
+]
+wheels = [
+    { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.3.0/pyopenjtalk-0.4.1-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:7f9dd52c9b998abc38ec9d6df92c34f9d9893cbb43156d5b3dc75f8ab26a7424" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "black", marker = "extra == 'dev'", specifier = ">=19.19b0,<=20.8" },
+    { name = "click", marker = "extra == 'dev'", specifier = "<8.1.0" },
+    { name = "cython", marker = "extra == 'dev'", specifier = ">=0.29.16" },
+    { name = "flake8", marker = "extra == 'dev'", specifier = ">=3.7,<4" },
+    { name = "flake8-bugbear", marker = "extra == 'dev'" },
+    { name = "importlib-metadata", marker = "extra == 'dev'", specifier = "<5.0" },
+    { name = "importlib-resources", marker = "python_full_version < '3.9'" },
+    { name = "ipython", marker = "extra == 'docs'" },
+    { name = "isort", marker = "extra == 'dev'", specifier = ">=4.3,<5.2.0" },
+    { name = "jinja2", marker = "extra == 'docs'", specifier = ">=3.0.1" },
+    { name = "jupyter", marker = "extra == 'docs'" },
+    { name = "marine", marker = "extra == 'marine'", specifier = ">=0.0.5" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = "<=0.910" },
+    { name = "nbsphinx", marker = "extra == 'docs'", specifier = ">=0.8.6" },
+    { name = "numpy", specifier = ">=1.20.0" },
+    { name = "pandoc", marker = "extra == 'docs'" },
+    { name = "pysen", marker = "extra == 'dev'" },
+    { name = "pytest", marker = "extra == 'test'" },
+    { name = "scipy", marker = "extra == 'test'" },
+    { name = "sphinx-rtd-theme", marker = "extra == 'docs'" },
+    { name = "tqdm" },
+    { name = "types-decorator", marker = "extra == 'dev'" },
+    { name = "types-setuptools", marker = "extra == 'dev'" },
+]
+provides-extras = ["docs", "dev", "test", "marine"]
 
 [[package]]
 name = "pytest"
@@ -470,7 +564,9 @@ dependencies = [
     { name = "av" },
     { name = "numpy" },
     { name = "platformdirs" },
-    { name = "pyopenjtalk" },
+    { name = "pyopenjtalk", version = "0.4.1", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine != 'arm64' and sys_platform == 'darwin') or (platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
+    { name = "pyopenjtalk", version = "0.4.1", source = { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.3.0/pyopenjtalk-0.4.1-cp313-cp313-macosx_11_0_arm64.whl" }, marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "pyopenjtalk", version = "0.4.1", source = { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.3.0/pyopenjtalk-0.4.1-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl" }, marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "sherpa-onnx" },
     { name = "sherpa-onnx-core" },
     { name = "tqdm" },
@@ -490,7 +586,9 @@ requires-dist = [
     { name = "av" },
     { name = "numpy" },
     { name = "platformdirs" },
-    { name = "pyopenjtalk" },
+    { name = "pyopenjtalk", marker = "(platform_machine != 'arm64' and sys_platform == 'darwin') or (platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
+    { name = "pyopenjtalk", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'", url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.3.0/pyopenjtalk-0.4.1-cp313-cp313-macosx_11_0_arm64.whl" },
+    { name = "pyopenjtalk", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'", url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.3.0/pyopenjtalk-0.4.1-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl" },
     { name = "sherpa-onnx" },
     { name = "sherpa-onnx-core" },
     { name = "tqdm", specifier = ">=4.67.3" },
