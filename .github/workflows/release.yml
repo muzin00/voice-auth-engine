@@ -27,13 +27,9 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-  ci:
+  release:
     needs: [check-version]
     if: needs.check-version.outputs.changed == 'true'
-    uses: ./.github/workflows/ci.yml
-
-  release:
-    needs: [check-version, ci]
     runs-on: ubuntu-latest
     permissions:
       contents: write
