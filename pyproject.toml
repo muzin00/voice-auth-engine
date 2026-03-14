@@ -1,6 +1,6 @@
 [project]
 name = "voice-auth-engine"
-version = "0.5.1"
+version = "0.5.2"
 description = "Voice authentication engine"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -35,12 +35,6 @@ testpaths = ["tests"]
 addopts = "--cov=voice_auth_engine --cov-report=term-missing"
 filterwarnings = [
     "ignore:Python 3.14 will.*filter extracted tar archives:DeprecationWarning",
-]
-
-[tool.uv.sources]
-pyopenjtalk = [
-    { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.5.0/pyopenjtalk-0.4.1-cp313-cp313-macosx_11_0_arm64.whl", marker = "sys_platform == 'darwin' and platform_machine == 'arm64'" },
-    { url = "https://github.com/muzin00/voice-auth-engine/releases/download/v0.5.0/pyopenjtalk-0.4.1-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'" },
 ]
 
 [tool.ruff]
