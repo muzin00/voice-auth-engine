@@ -63,8 +63,8 @@ class PassphraseAuth:
 
         # 登録
         enroller = auth.create_enroller()
-        enroller.add_sample(audio_bytes_1)
-        enroller.add_sample(audio_bytes_2)
+        enroller.add_audio(audio_bytes_1)
+        enroller.add_audio(audio_bytes_2)
         embedding = enroller.enroll()
         saved = embedding.to_bytes()
 
@@ -185,7 +185,7 @@ class PassphraseAuthEnroller:
         self._embeddings: list[Embedding] = []
         self._phoneme_samples: list[Phoneme] = []
 
-    def add_sample(self, audio: AudioInput) -> None:
+    def add_audio(self, audio: AudioInput) -> None:
         """音声サンプルを蓄積する。
 
         Args:
