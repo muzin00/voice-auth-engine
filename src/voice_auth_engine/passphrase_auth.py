@@ -182,8 +182,7 @@ class PassphraseAuthEnroller:
 
     def __init__(self, auth: PassphraseAuth) -> None:
         self._auth = auth
-        self._embeddings: list[Embedding] = []
-        self._phoneme_samples: list[Phoneme] = []
+        self._passphrases: list[Passphrase] = []
 
     def add_audio(self, audio: AudioInput) -> None:
         """音声サンプルを蓄積する。
@@ -197,8 +196,7 @@ class PassphraseAuthEnroller:
             InsufficientPhonemeError: 音素多様性が不足の場合。
         """
         result = self._auth.extract_passphrase(audio)
-        self._embeddings.append(result.embedding)
-        self._phoneme_samples.append(result.phoneme)
+        self._passphrases.append(result)
 
     def enroll(self) -> EnrollmentResult:
         """蓄積サンプルの平均埋め込みベクトルと基準音素列を返す。
@@ -207,15 +205,14 @@ class PassphraseAuthEnroller:
             ValueError: サンプルが蓄積されていない場合。
             PassphraseEnrollmentError: 音素列の整合性チェックに失敗した場合。
         """
-        if not self._embeddings:
+        if not self._passphrases:
             raise ValueError("サンプルが蓄積されていません")
-        mean_values = np.mean([e.values for e in self._embeddings], axis=0)
+        mean_values = np.mean([p.embedding.values for p in self._passphrases], axis=0)
         embedding = Embedding(values=mean_values)
+        phoneme_samples = [p.phoneme for p in self._passphrases]
         if self._auth._phoneme_threshold is not None:
-            validate_phoneme_consistency(
-                self._phoneme_samples, threshold=self._auth._phoneme_threshold
-            )
-            phoneme = Phoneme.select_reference(self._phoneme_samples)
+            validate_phoneme_consistency(phoneme_samples, threshold=self._auth._phoneme_threshold)
+            phoneme = Phoneme.select_reference(phoneme_samples)
         else:
             phoneme = Phoneme(values=[])
         return EnrollmentResult(embedding=embedding, phoneme=phoneme)
@@ -223,7 +220,7 @@ class PassphraseAuthEnroller:
     @property
     def sample_count(self) -> int:
         """蓄積済みサンプル数。"""
-        return len(self._embeddings)
+        return len(self._passphrases)
 
 
 class PassphraseAuthVerifier:
