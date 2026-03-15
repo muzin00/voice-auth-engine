@@ -53,25 +53,21 @@ class VerificationResult(NamedTuple):
 class PassphraseAuth:
     """パスフレーズ方式の話者認証。
 
-    Enroller と Verifier を生成し、
     音声読み込み → VAD → 発話時間チェック → 音素検証 → 埋め込み抽出の
-    共通パイプラインを提供する。
+    パイプラインと、登録・照合メソッドを提供する。
 
     使用例::
 
         auth = PassphraseAuth(threshold=0.5)
 
         # 登録
-        enroller = auth.create_enroller()
-        enroller.add_audio(audio_bytes_1)
-        enroller.add_audio(audio_bytes_2)
-        embedding = enroller.enroll()
-        saved = embedding.to_bytes()
+        passphrases = [auth.extract_passphrase(a) for a in audios]
+        result = auth.enroll(passphrases)
+        saved = result.embedding.to_bytes()
 
         # 認証
-        embedding = Embedding.from_bytes(saved)
-        verifier = auth.create_verifier(embedding)
-        result = verifier.verify(audio_bytes)
+        passphrase = auth.extract_passphrase(audio_bytes)
+        result = auth.verify_passphrase(passphrase, enrollment)
         result.voiceprint_accepted  # True/False
         result.voiceprint_score     # 0.85
     """
@@ -104,20 +100,59 @@ class PassphraseAuth:
         """照合の閾値（コサイン類似度）。"""
         return self._threshold
 
-    def create_enroller(self) -> PassphraseAuthEnroller:
-        """登録用 Enroller を生成する。"""
-        return PassphraseAuthEnroller(self)
-
-    def create_verifier(
-        self, embedding: Embedding, phoneme: Phoneme | None = None
-    ) -> PassphraseAuthVerifier:
-        """照合用 Verifier を生成する。
+    def enroll_passphrase(self, passphrases: list[Passphrase]) -> EnrollmentResult:
+        """抽出済みパスフレーズから平均埋め込みベクトルと基準音素列を算出する。
 
         Args:
-            embedding: 登録済み埋め込みベクトル。
-            phoneme: 登録済み基準音素。None の場合は音素照合を無効化。
+            passphrases: extract_passphrase() で抽出済みのパスフレーズのリスト。
+
+        Returns:
+            平均埋め込みベクトルと基準音素列。
+
+        Raises:
+            ValueError: passphrases が空の場合。
+            PhonemeConsistencyError: 音素列の整合性チェックに失敗した場合。
         """
-        return PassphraseAuthVerifier(self, embedding, phoneme)
+        if not passphrases:
+            raise ValueError("passphrases が空です")
+        mean_values = np.mean([p.embedding.values for p in passphrases], axis=0)
+        embedding = Embedding(values=mean_values)
+        phoneme_samples = [p.phoneme for p in passphrases]
+        if self._phoneme_threshold is not None:
+            validate_phoneme_consistency(phoneme_samples, threshold=self._phoneme_threshold)
+            phoneme = Phoneme.select_reference(phoneme_samples)
+        else:
+            phoneme = Phoneme(values=[])
+        return EnrollmentResult(embedding=embedding, phoneme=phoneme)
+
+    def verify_passphrase(
+        self,
+        passphrase: Passphrase,
+        enrollment: EnrollmentResult,
+    ) -> VerificationResult:
+        """抽出済みパスフレーズを登録済み声紋と照合する。
+
+        Args:
+            passphrase: extract_passphrase() で抽出済みのパスフレーズ。
+            enrollment: select_passphrase() で算出した登録結果。
+        """
+        score = cosine_similarity(enrollment.embedding.values, passphrase.embedding.values)
+        speaker_accepted = score >= self._threshold
+
+        if self._phoneme_threshold is not None:
+            passphrase_score = normalized_edit_distance(
+                enrollment.phoneme.values, passphrase.phoneme.values
+            )
+            passphrase_accepted = passphrase_score <= self._phoneme_threshold
+            voiceprint_accepted = speaker_accepted and passphrase_accepted
+            return VerificationResult(
+                voiceprint_accepted=voiceprint_accepted,
+                voiceprint_score=score,
+                passphrase_score=passphrase_score,
+                passphrase_accepted=passphrase_accepted,
+            )
+
+        return VerificationResult(voiceprint_accepted=speaker_accepted, voiceprint_score=score)
 
     def extract_passphrase(self, audio: AudioInput) -> Passphrase:
         """音声入力から検証済み埋め込みベクトルと音素列を抽出する。
@@ -171,99 +206,3 @@ class PassphraseAuth:
             InsufficientPhonemeError: 音素多様性が不足の場合。
         """
         return self.extract_passphrase(audio).embedding
-
-
-class PassphraseAuthEnroller:
-    """声紋登録 (Enroller)。
-
-    音声サンプルを蓄積し、平均埋め込みベクトルと基準音素列を算出する。
-    ``PassphraseAuth.create_enroller()`` から生成する。
-    """
-
-    def __init__(self, auth: PassphraseAuth) -> None:
-        self._auth = auth
-        self._passphrases: list[Passphrase] = []
-
-    def add_audio(self, audio: AudioInput) -> None:
-        """音声サンプルを蓄積する。
-
-        Args:
-            audio: 登録用音声データ。
-
-        Raises:
-            EmptyAudioError: 音声区間が検出されなかった場合。
-            InsufficientDurationError: 発話時間が不足の場合。
-            InsufficientPhonemeError: 音素多様性が不足の場合。
-        """
-        result = self._auth.extract_passphrase(audio)
-        self._passphrases.append(result)
-
-    def enroll(self) -> EnrollmentResult:
-        """蓄積サンプルの平均埋め込みベクトルと基準音素列を返す。
-
-        Raises:
-            ValueError: サンプルが蓄積されていない場合。
-            PassphraseEnrollmentError: 音素列の整合性チェックに失敗した場合。
-        """
-        if not self._passphrases:
-            raise ValueError("サンプルが蓄積されていません")
-        mean_values = np.mean([p.embedding.values for p in self._passphrases], axis=0)
-        embedding = Embedding(values=mean_values)
-        phoneme_samples = [p.phoneme for p in self._passphrases]
-        if self._auth._phoneme_threshold is not None:
-            validate_phoneme_consistency(phoneme_samples, threshold=self._auth._phoneme_threshold)
-            phoneme = Phoneme.select_reference(phoneme_samples)
-        else:
-            phoneme = Phoneme(values=[])
-        return EnrollmentResult(embedding=embedding, phoneme=phoneme)
-
-    @property
-    def sample_count(self) -> int:
-        """蓄積済みサンプル数。"""
-        return len(self._passphrases)
-
-
-class PassphraseAuthVerifier:
-    """声紋照合 (Verifier)。
-
-    登録済み埋め込みベクトルに対して音声を照合する。
-    ``PassphraseAuth.create_verifier(embedding)`` から生成する。
-    """
-
-    def __init__(
-        self,
-        auth: PassphraseAuth,
-        embedding: Embedding,
-        phoneme: Phoneme | None = None,
-    ) -> None:
-        self._auth = auth
-        self._embedding = embedding
-        self._phoneme = phoneme
-
-    def verify(self, audio: AudioInput) -> VerificationResult:
-        """音声を登録済み声紋と照合する。
-
-        Args:
-            audio: 照合用音声データ。
-
-        Raises:
-            EmptyAudioError: 音声区間が検出されなかった場合。
-            InsufficientDurationError: 発話時間が不足の場合。
-            InsufficientPhonemeError: 音素多様性が不足の場合。
-        """
-        result = self._auth.extract_passphrase(audio)
-        score = cosine_similarity(self._embedding.values, result.embedding.values)
-        speaker_accepted = score >= self._auth.threshold
-
-        if self._phoneme is not None and self._auth._phoneme_threshold is not None:
-            passphrase_score = normalized_edit_distance(self._phoneme.values, result.phoneme.values)
-            passphrase_accepted = passphrase_score <= self._auth._phoneme_threshold
-            voiceprint_accepted = speaker_accepted and passphrase_accepted
-            return VerificationResult(
-                voiceprint_accepted=voiceprint_accepted,
-                voiceprint_score=score,
-                passphrase_score=passphrase_score,
-                passphrase_accepted=passphrase_accepted,
-            )
-
-        return VerificationResult(voiceprint_accepted=speaker_accepted, voiceprint_score=score)
