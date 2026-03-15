@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from voice_auth_engine.math import (
+    cosine_distance_matrix,
     cosine_similarity,
     normalized_edit_distance,
     pairwise_distances,
@@ -67,6 +68,42 @@ class TestNormalizedEditDistance:
         a = ["a", "b", "c"]
         b = ["x", "y", "z"]
         assert normalized_edit_distance(a, b) == pytest.approx(1.0)
+
+
+class TestCosineDistanceMatrix:
+    """cosine_distance_matrix のテスト。"""
+
+    def test_identical_vectors(self) -> None:
+        """同一ベクトル同士 → 距離 0.0。"""
+        v = np.array([1.0, 0.0, 0.0], dtype=np.float32)
+        result = cosine_distance_matrix([v, v])
+        assert result[0][1] == pytest.approx(0.0)
+
+    def test_orthogonal_vectors(self) -> None:
+        """直交ベクトル → 距離 1.0。"""
+        a = np.array([1.0, 0.0], dtype=np.float32)
+        b = np.array([0.0, 1.0], dtype=np.float32)
+        result = cosine_distance_matrix([a, b])
+        assert result[0][1] == pytest.approx(1.0)
+
+    def test_symmetric(self) -> None:
+        """距離行列が対称であること。"""
+        vectors = [
+            np.array([1.0, 0.0, 0.0], dtype=np.float32),
+            np.array([0.9, 0.1, 0.0], dtype=np.float32),
+            np.array([0.0, 0.0, 1.0], dtype=np.float32),
+        ]
+        result = cosine_distance_matrix(vectors)
+        for i in range(3):
+            assert result[i][i] == pytest.approx(0.0)
+            for j in range(3):
+                assert result[i][j] == pytest.approx(result[j][i])
+
+    def test_single_vector(self) -> None:
+        """単一ベクトル → 1×1 のゼロ行列。"""
+        v = np.array([1.0, 0.0], dtype=np.float32)
+        result = cosine_distance_matrix([v])
+        assert result == [[0.0]]
 
 
 class TestPairwiseDistances:

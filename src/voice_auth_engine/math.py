@@ -69,6 +69,26 @@ def normalized_edit_distance(a: Sequence[T], b: Sequence[T]) -> float:
     return prev[len_a] / max(len_a, len_b)
 
 
+def cosine_distance_matrix(
+    vectors: Sequence[npt.NDArray[np.float32]],
+) -> list[list[float]]:
+    """コサイン距離の全ペア距離行列を計算する。
+
+    cosine_distance = 1 - cosine_similarity。
+
+    Returns:
+        n×n の対称行列。matrix[i][j] は vectors[i] と vectors[j] のコサイン距離。
+    """
+    n = len(vectors)
+    distances = [[0.0] * n for _ in range(n)]
+    for i in range(n):
+        for j in range(i + 1, n):
+            d = 1.0 - cosine_similarity(vectors[i], vectors[j])
+            distances[i][j] = d
+            distances[j][i] = d
+    return distances
+
+
 def pairwise_distances(
     sequences: Sequence[Sequence[T]],
     distance_fn: Callable[[Sequence[T], Sequence[T]], float] = normalized_edit_distance,
