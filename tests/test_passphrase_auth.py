@@ -15,6 +15,7 @@ from voice_auth_engine.passphrase_auth import (
     PassphraseAuth,
     PassphraseAuthEnroller,
     PassphraseAuthVerifier,
+    PassphraseExtractionResult,
 )
 from voice_auth_engine.passphrase_validator import PhonemeConsistencyError
 from voice_auth_engine.phoneme_extractor import Phoneme
@@ -578,3 +579,46 @@ class TestPassphraseAuthVerifierPhonemes:
         assert result.voiceprint_accepted is True
         assert result.passphrase_score is None
         assert result.passphrase_accepted is None
+
+
+class TestExtractPassphrase:
+    """extract_passphrase の戻り値テスト。"""
+
+    @patch("voice_auth_engine.passphrase_auth.extract_phonemes")
+    @patch("voice_auth_engine.passphrase_auth.transcribe")
+    @patch("voice_auth_engine.passphrase_auth.extract_embedding")
+    @patch("voice_auth_engine.passphrase_auth.extract_speech")
+    @patch("voice_auth_engine.passphrase_auth.detect_speech")
+    @patch("voice_auth_engine.passphrase_auth.load_audio")
+    def test_result_contains_all_fields(
+        self,
+        mock_load: MagicMock,
+        mock_detect: MagicMock,
+        mock_extract_sp: MagicMock,
+        mock_extract_emb: MagicMock,
+        mock_transcribe: MagicMock,
+        mock_extract_phonemes: MagicMock,
+    ) -> None:
+        """全フィールド（embedding, phoneme, transcription, speech_duration）が返る。"""
+        auth = PassphraseAuth(
+            threshold=0.5,
+            min_speech_seconds=0.1,
+            min_unique_phonemes=5,
+        )
+        original_audio = make_audio(5.0)
+        speech_audio = make_audio(1.5)
+        mock_load.return_value = original_audio
+        mock_detect.return_value = make_segments(original_audio)
+        mock_extract_sp.return_value = speech_audio
+        mock_extract_emb.return_value = make_embedding([1.0, 0.0, 0.0])
+        mock_transcribe.return_value = MagicMock(text="こんにちは世界")
+        phonemes = ["k", "o", "N", "n", "i", "ch", "w", "a", "s", "e", "k", "a", "i"]
+        mock_extract_phonemes.return_value = Phoneme(values=phonemes)
+
+        result = auth.extract_passphrase(original_audio)
+
+        assert isinstance(result, PassphraseExtractionResult)
+        assert isinstance(result.embedding, Embedding)
+        assert result.phoneme.values == phonemes
+        assert result.transcription == "こんにちは世界"
+        assert result.speech_duration == pytest.approx(1.5)

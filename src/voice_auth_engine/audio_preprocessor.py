@@ -30,6 +30,11 @@ class AudioData(NamedTuple):
     sample_rate: int  # 常に 16000
 
     @property
+    def duration(self) -> float:
+        """音声の長さ（秒）。"""
+        return len(self.samples) / self.sample_rate
+
+    @property
     def samples_f32(self) -> npt.NDArray[np.float32]:
         """int16 サンプルを [-1.0, 1.0] の float32 に正規化して返す。"""
         return self.samples.astype(np.float32) / 32768.0
