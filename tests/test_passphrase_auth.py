@@ -12,10 +12,10 @@ from voice_auth_engine.audio_validator import EmptyAudioError
 from voice_auth_engine.embedding_extractor import Embedding
 from voice_auth_engine.passphrase_auth import (
     EnrollmentResult,
+    Passphrase,
     PassphraseAuth,
     PassphraseAuthEnroller,
     PassphraseAuthVerifier,
-    PassphraseExtractionResult,
 )
 from voice_auth_engine.passphrase_validator import PhonemeConsistencyError
 from voice_auth_engine.phoneme_extractor import Phoneme
@@ -40,7 +40,7 @@ class TestPassphraseAuthEnroller:
     @patch("voice_auth_engine.passphrase_auth.extract_speech")
     @patch("voice_auth_engine.passphrase_auth.detect_speech")
     @patch("voice_auth_engine.passphrase_auth.extract_embedding")
-    def test_add_sample_increments_count(
+    def test_add_audio_increments_count(
         self,
         mock_extract_emb: MagicMock,
         mock_detect: MagicMock,
@@ -48,7 +48,7 @@ class TestPassphraseAuthEnroller:
         mock_load: MagicMock,
         auth: PassphraseAuth,
     ) -> None:
-        """add_sample 後に sample_count が増加する。"""
+        """add_audio 後に sample_count が増加する。"""
         audio = make_audio(1.0)
         mock_load.return_value = audio
         mock_detect.return_value = make_segments(audio)
@@ -57,9 +57,9 @@ class TestPassphraseAuthEnroller:
 
         enroller = auth.create_enroller()
         assert enroller.sample_count == 0
-        enroller.add_sample(audio)
+        enroller.add_audio(audio)
         assert enroller.sample_count == 1
-        enroller.add_sample(audio)
+        enroller.add_audio(audio)
         assert enroller.sample_count == 2
 
     @patch("voice_auth_engine.passphrase_auth.load_audio")
@@ -82,7 +82,7 @@ class TestPassphraseAuthEnroller:
         mock_extract_emb.return_value = make_embedding([1.0, 0.0, 0.0])
 
         enroller = auth.create_enroller()
-        enroller.add_sample(audio)
+        enroller.add_audio(audio)
         result = enroller.enroll()
         np.testing.assert_array_equal(result.embedding.values, [1.0, 0.0, 0.0])
 
@@ -109,8 +109,8 @@ class TestPassphraseAuthEnroller:
         ]
 
         enroller = auth.create_enroller()
-        enroller.add_sample(audio)
-        enroller.add_sample(audio)
+        enroller.add_audio(audio)
+        enroller.add_audio(audio)
         result = enroller.enroll()
         np.testing.assert_array_almost_equal(result.embedding.values, [0.5, 0.5, 0.0])
 
@@ -123,7 +123,7 @@ class TestPassphraseAuthEnroller:
     @patch("voice_auth_engine.passphrase_auth.load_audio")
     @patch("voice_auth_engine.passphrase_auth.extract_speech")
     @patch("voice_auth_engine.passphrase_auth.detect_speech")
-    def test_add_sample_no_speech_raises(
+    def test_add_audio_no_speech_raises(
         self,
         mock_detect: MagicMock,
         mock_extract_sp: MagicMock,
@@ -140,7 +140,7 @@ class TestPassphraseAuthEnroller:
 
         enroller = auth.create_enroller()
         with pytest.raises(EmptyAudioError):
-            enroller.add_sample(audio)
+            enroller.add_audio(audio)
 
     @patch("voice_auth_engine.passphrase_auth.load_audio")
     @patch("voice_auth_engine.passphrase_auth.extract_speech")
@@ -162,7 +162,7 @@ class TestPassphraseAuthEnroller:
         mock_extract_emb.return_value = make_embedding([1.0, 0.0, 0.0])
 
         enroller = auth.create_enroller()
-        enroller.add_sample(audio)
+        enroller.add_audio(audio)
         result = enroller.enroll()
         assert isinstance(result, EnrollmentResult)
         assert isinstance(result.embedding, Embedding)
@@ -359,7 +359,7 @@ class TestPassphraseAuthPhonemes:
         )
         enroller = auth_with_phonemes.create_enroller()
         for _ in range(3):
-            enroller.add_sample(audio)
+            enroller.add_audio(audio)
         result = enroller.enroll()
         assert isinstance(result, EnrollmentResult)
         assert result.phoneme.values == ["a", "i", "u", "e", "o"]
@@ -401,8 +401,8 @@ class TestPassphraseAuthPhonemes:
             phoneme_lists=phoneme_lists,
         )
         enroller = auth.create_enroller()
-        enroller.add_sample(audio)
-        enroller.add_sample(audio)
+        enroller.add_audio(audio)
+        enroller.add_audio(audio)
         with pytest.raises(PhonemeConsistencyError, match="音素列の不整合"):
             enroller.enroll()
 
@@ -426,7 +426,7 @@ class TestPassphraseAuthPhonemes:
         mock_extract_emb.return_value = make_embedding([1.0, 0.0, 0.0])
 
         enroller = auth.create_enroller()
-        enroller.add_sample(audio)
+        enroller.add_audio(audio)
         result = enroller.enroll()
         assert result.phoneme.values == []
 
@@ -617,7 +617,7 @@ class TestExtractPassphrase:
 
         result = auth.extract_passphrase(original_audio)
 
-        assert isinstance(result, PassphraseExtractionResult)
+        assert isinstance(result, Passphrase)
         assert isinstance(result.embedding, Embedding)
         assert result.phoneme.values == phonemes
         assert result.transcription == "こんにちは世界"

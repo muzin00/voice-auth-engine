@@ -28,11 +28,11 @@ from voice_auth_engine.model_config import ModelConfig
 from voice_auth_engine.model_downloader import ModelDownloader, ModelDownloadError
 from voice_auth_engine.passphrase_auth import (
     EnrollmentResult,
+    Passphrase,
     PassphraseAuth,
     PassphraseAuthEnroller,
     PassphraseAuthError,
     PassphraseAuthVerifier,
-    PassphraseExtractionResult,
     VerificationResult,
 )
 from voice_auth_engine.passphrase_validator import (
@@ -86,7 +86,7 @@ __all__ = [
     "PassphraseAuthEnroller",
     "PassphraseAuthVerifier",
     "PhonemeConsistencyError",
-    "PassphraseExtractionResult",
+    "Passphrase",
     "VerificationResult",
     "Phoneme",
     "PassphraseValidationError",
