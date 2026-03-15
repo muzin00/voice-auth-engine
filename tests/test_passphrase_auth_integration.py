@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from voice_auth_engine.audio_validator import EmptyAudioError, InsufficientDurationError
-from voice_auth_engine.passphrase_auth import PassphraseAuth
+from voice_auth_engine.passphrase_auth import EnrollmentResult, PassphraseAuth
 from voice_auth_engine.passphrase_validator import PhonemeConsistencyError
 
 from .audio_factory import generate_silence_samples, make_audio_data
@@ -26,12 +26,11 @@ class TestPassphraseAuthIntegration:
 
     def test_enroll_and_verify_same_speaker(self, auth: PassphraseAuth) -> None:
         """登録→本人認証で accepted=True。"""
-        enroller = auth.create_enroller()
-        enroller.add_audio(FIXTURES_DIR / "speaker_a_enroll.mp3")
-        result = enroller.enroll()
+        passphrases = [auth.extract_passphrase(FIXTURES_DIR / "speaker_a_enroll.mp3")]
+        enrollment = auth.enroll_passphrase(passphrases)
 
-        verifier = auth.create_verifier(result.embedding)
-        result = verifier.verify(FIXTURES_DIR / "speaker_a_verify.mp3")
+        passphrase = auth.extract_passphrase(FIXTURES_DIR / "speaker_a_verify.mp3")
+        result = auth.verify_passphrase(passphrase, enrollment)
         assert result.voiceprint_accepted is True
         assert result.voiceprint_score > auth.threshold
 
@@ -41,12 +40,11 @@ class TestPassphraseAuthIntegration:
     )
     def test_reject_different_speaker(self, auth: PassphraseAuth, other_speaker: str) -> None:
         """登録→他人認証で accepted=False。"""
-        enroller = auth.create_enroller()
-        enroller.add_audio(FIXTURES_DIR / "speaker_a_enroll.mp3")
-        result = enroller.enroll()
+        passphrases = [auth.extract_passphrase(FIXTURES_DIR / "speaker_a_enroll.mp3")]
+        enrollment = auth.enroll_passphrase(passphrases)
 
-        verifier = auth.create_verifier(result.embedding)
-        result = verifier.verify(FIXTURES_DIR / other_speaker)
+        passphrase = auth.extract_passphrase(FIXTURES_DIR / other_speaker)
+        result = auth.verify_passphrase(passphrase, enrollment)
         assert result.voiceprint_accepted is False
         assert result.voiceprint_score < auth.threshold
 
@@ -58,43 +56,44 @@ class TestPassphraseAuthIntegration:
         self, auth: PassphraseAuth, other_speaker: str
     ) -> None:
         """本人のスコアが他人のスコアより高い。"""
-        enroller = auth.create_enroller()
-        enroller.add_audio(FIXTURES_DIR / "speaker_a_enroll.mp3")
-        result = enroller.enroll()
+        passphrases = [auth.extract_passphrase(FIXTURES_DIR / "speaker_a_enroll.mp3")]
+        enrollment = auth.enroll_passphrase(passphrases)
 
-        verifier = auth.create_verifier(result.embedding)
-        same_result = verifier.verify(FIXTURES_DIR / "speaker_a_verify.mp3")
-        diff_result = verifier.verify(FIXTURES_DIR / other_speaker)
+        same_passphrase = auth.extract_passphrase(FIXTURES_DIR / "speaker_a_verify.mp3")
+        diff_passphrase = auth.extract_passphrase(FIXTURES_DIR / other_speaker)
+        same_result = auth.verify_passphrase(same_passphrase, enrollment)
+        diff_result = auth.verify_passphrase(diff_passphrase, enrollment)
         assert same_result.voiceprint_score > diff_result.voiceprint_score
 
     def test_embedding_serialization_roundtrip(self, auth: PassphraseAuth) -> None:
         """埋め込みベクトルのシリアライズ→デシリアライズ後も認証可能。"""
         from voice_auth_engine.embedding_extractor import Embedding
 
-        enroller = auth.create_enroller()
-        enroller.add_audio(FIXTURES_DIR / "speaker_a_enroll.mp3")
-        enrollment = enroller.enroll()
+        passphrases = [auth.extract_passphrase(FIXTURES_DIR / "speaker_a_enroll.mp3")]
+        enrollment = auth.enroll_passphrase(passphrases)
 
         restored = Embedding.from_bytes(enrollment.embedding.to_bytes())
-        verifier = auth.create_verifier(restored)
-        result = verifier.verify(FIXTURES_DIR / "speaker_a_verify.mp3")
+        restored_enrollment = EnrollmentResult(
+            embedding=restored,
+            phoneme=enrollment.phoneme,
+        )
+        passphrase = auth.extract_passphrase(FIXTURES_DIR / "speaker_a_verify.mp3")
+        result = auth.verify_passphrase(passphrase, restored_enrollment)
         assert result.voiceprint_accepted is True
 
     def test_silence_raises_empty_audio_error(self, auth: PassphraseAuth) -> None:
         """無音音声で EmptyAudioError が発生する。"""
         silence = make_audio_data(generate_silence_samples(duration=5.0))
-        enroller = auth.create_enroller()
         with pytest.raises(EmptyAudioError):
-            enroller.add_audio(silence)
+            auth.extract_passphrase(silence)
 
     def test_short_speech_raises_insufficient_duration_error(
         self,
         auth: PassphraseAuth,
     ) -> None:
         """発話時間が短い音声で InsufficientDurationError が発生する。"""
-        enroller = auth.create_enroller()
         with pytest.raises(InsufficientDurationError):
-            enroller.add_audio(FIXTURES_DIR / "digits_clear.mp3")
+            auth.extract_passphrase(FIXTURES_DIR / "digits_clear.mp3")
 
 
 @pytest.fixture
@@ -111,10 +110,11 @@ class TestPhonemeVerificationIntegration:
         phoneme_auth: PassphraseAuth,
     ) -> None:
         """phoneme_threshold 有効で登録すると phonemes が返る。"""
-        enroller = phoneme_auth.create_enroller()
-        enroller.add_audio(FIXTURES_DIR / "speaker_a_phrase_a_1.mp3")
-        enroller.add_audio(FIXTURES_DIR / "speaker_a_phrase_a_2.mp3")
-        result = enroller.enroll()
+        passphrases = [
+            phoneme_auth.extract_passphrase(FIXTURES_DIR / "speaker_a_phrase_a_1.mp3"),
+            phoneme_auth.extract_passphrase(FIXTURES_DIR / "speaker_a_phrase_a_2.mp3"),
+        ]
+        result = phoneme_auth.enroll_passphrase(passphrases)
 
         assert len(result.phoneme.values) > 0
 
@@ -123,13 +123,13 @@ class TestPhonemeVerificationIntegration:
         phoneme_auth: PassphraseAuth,
     ) -> None:
         """3サンプル登録でメドイドが選択され phonemes が返る。"""
-        enroller = phoneme_auth.create_enroller()
-        enroller.add_audio(FIXTURES_DIR / "speaker_a_phrase_a_1.mp3")
-        enroller.add_audio(FIXTURES_DIR / "speaker_a_phrase_a_2.mp3")
-        enroller.add_audio(FIXTURES_DIR / "speaker_a_phrase_a_3.mp3")
-        result = enroller.enroll()
+        passphrases = [
+            phoneme_auth.extract_passphrase(FIXTURES_DIR / "speaker_a_phrase_a_1.mp3"),
+            phoneme_auth.extract_passphrase(FIXTURES_DIR / "speaker_a_phrase_a_2.mp3"),
+            phoneme_auth.extract_passphrase(FIXTURES_DIR / "speaker_a_phrase_a_3.mp3"),
+        ]
+        result = phoneme_auth.enroll_passphrase(passphrases)
 
-        assert enroller.sample_count == 3
         assert len(result.phoneme.values) > 0
 
     def test_same_speaker_same_passphrase_accepted(
@@ -137,13 +137,14 @@ class TestPhonemeVerificationIntegration:
         phoneme_auth: PassphraseAuth,
     ) -> None:
         """本人+同一パスフレーズで accepted=True, passphrase_accepted=True。"""
-        enroller = phoneme_auth.create_enroller()
-        enroller.add_audio(FIXTURES_DIR / "speaker_a_phrase_a_1.mp3")
-        enroller.add_audio(FIXTURES_DIR / "speaker_a_phrase_a_2.mp3")
-        enrollment = enroller.enroll()
+        passphrases = [
+            phoneme_auth.extract_passphrase(FIXTURES_DIR / "speaker_a_phrase_a_1.mp3"),
+            phoneme_auth.extract_passphrase(FIXTURES_DIR / "speaker_a_phrase_a_2.mp3"),
+        ]
+        enrollment = phoneme_auth.enroll_passphrase(passphrases)
 
-        verifier = phoneme_auth.create_verifier(enrollment.embedding, enrollment.phoneme)
-        result = verifier.verify(FIXTURES_DIR / "speaker_a_phrase_a_verify.mp3")
+        passphrase = phoneme_auth.extract_passphrase(FIXTURES_DIR / "speaker_a_phrase_a_verify.mp3")
+        result = phoneme_auth.verify_passphrase(passphrase, enrollment)
 
         assert result.voiceprint_accepted is True
         assert result.passphrase_accepted is True
@@ -156,13 +157,14 @@ class TestPhonemeVerificationIntegration:
         phoneme_auth: PassphraseAuth,
     ) -> None:
         """本人+異なるパスフレーズで accepted=False（話者OK, 音素NG）。"""
-        enroller = phoneme_auth.create_enroller()
-        enroller.add_audio(FIXTURES_DIR / "speaker_a_phrase_a_1.mp3")
-        enroller.add_audio(FIXTURES_DIR / "speaker_a_phrase_a_2.mp3")
-        enrollment = enroller.enroll()
+        passphrases = [
+            phoneme_auth.extract_passphrase(FIXTURES_DIR / "speaker_a_phrase_a_1.mp3"),
+            phoneme_auth.extract_passphrase(FIXTURES_DIR / "speaker_a_phrase_a_2.mp3"),
+        ]
+        enrollment = phoneme_auth.enroll_passphrase(passphrases)
 
-        verifier = phoneme_auth.create_verifier(enrollment.embedding, enrollment.phoneme)
-        result = verifier.verify(FIXTURES_DIR / "speaker_a_phrase_b.mp3")
+        passphrase = phoneme_auth.extract_passphrase(FIXTURES_DIR / "speaker_a_phrase_b.mp3")
+        result = phoneme_auth.verify_passphrase(passphrase, enrollment)
 
         assert result.voiceprint_accepted is False
         assert result.voiceprint_score >= phoneme_auth.threshold  # 話者は本人
@@ -173,13 +175,14 @@ class TestPhonemeVerificationIntegration:
         phoneme_auth: PassphraseAuth,
     ) -> None:
         """他人+同一パスフレーズで accepted=False（話者NG, 音素OK）。"""
-        enroller = phoneme_auth.create_enroller()
-        enroller.add_audio(FIXTURES_DIR / "speaker_a_phrase_a_1.mp3")
-        enroller.add_audio(FIXTURES_DIR / "speaker_a_phrase_a_2.mp3")
-        enrollment = enroller.enroll()
+        passphrases = [
+            phoneme_auth.extract_passphrase(FIXTURES_DIR / "speaker_a_phrase_a_1.mp3"),
+            phoneme_auth.extract_passphrase(FIXTURES_DIR / "speaker_a_phrase_a_2.mp3"),
+        ]
+        enrollment = phoneme_auth.enroll_passphrase(passphrases)
 
-        verifier = phoneme_auth.create_verifier(enrollment.embedding, enrollment.phoneme)
-        result = verifier.verify(FIXTURES_DIR / "speaker_b_phrase_a.mp3")
+        passphrase = phoneme_auth.extract_passphrase(FIXTURES_DIR / "speaker_b_phrase_a.mp3")
+        result = phoneme_auth.verify_passphrase(passphrase, enrollment)
 
         assert result.voiceprint_accepted is False
         assert result.voiceprint_score < phoneme_auth.threshold  # 話者が異なる
@@ -190,9 +193,9 @@ class TestPhonemeVerificationIntegration:
         phoneme_auth: PassphraseAuth,
     ) -> None:
         """異なるパスフレーズで登録すると PhonemeConsistencyError。"""
-        enroller = phoneme_auth.create_enroller()
-        enroller.add_audio(FIXTURES_DIR / "speaker_a_phrase_a_1.mp3")
-        enroller.add_audio(FIXTURES_DIR / "speaker_a_phrase_b.mp3")
-
+        passphrases = [
+            phoneme_auth.extract_passphrase(FIXTURES_DIR / "speaker_a_phrase_a_1.mp3"),
+            phoneme_auth.extract_passphrase(FIXTURES_DIR / "speaker_a_phrase_b.mp3"),
+        ]
         with pytest.raises(PhonemeConsistencyError):
-            enroller.enroll()
+            phoneme_auth.enroll_passphrase(passphrases)
