@@ -190,19 +190,3 @@ class PassphraseAuth:
             transcription=transcription,
             speech_duration=speech.duration,
         )
-
-    def extract_passphrase_embedding(self, audio: AudioInput) -> Embedding:
-        """音声入力から検証済み埋め込みベクトルを抽出する（後方互換）。
-
-        Args:
-            audio: 音声入力（bytes / str / Path）。
-
-        Returns:
-            検証済みの埋め込みベクトル。
-
-        Raises:
-            EmptyAudioError: 音声区間が検出されなかった場合。
-            InsufficientDurationError: 発話時間が不足の場合。
-            InsufficientPhonemeError: 音素多様性が不足の場合。
-        """
-        return self.extract_passphrase(audio).embedding
