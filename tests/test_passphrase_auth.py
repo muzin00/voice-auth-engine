@@ -12,10 +12,10 @@ from voice_auth_engine.audio_validator import EmptyAudioError
 from voice_auth_engine.embedding_extractor import Embedding
 from voice_auth_engine.passphrase_auth import (
     EnrollmentResult,
+    Passphrase,
     PassphraseAuth,
     PassphraseAuthEnroller,
     PassphraseAuthVerifier,
-    PassphraseExtractionResult,
 )
 from voice_auth_engine.passphrase_validator import PhonemeConsistencyError
 from voice_auth_engine.phoneme_extractor import Phoneme
@@ -617,7 +617,7 @@ class TestExtractPassphrase:
 
         result = auth.extract_passphrase(original_audio)
 
-        assert isinstance(result, PassphraseExtractionResult)
+        assert isinstance(result, Passphrase)
         assert isinstance(result.embedding, Embedding)
         assert result.phoneme.values == phonemes
         assert result.transcription == "こんにちは世界"

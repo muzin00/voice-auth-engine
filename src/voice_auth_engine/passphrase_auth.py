@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import NamedTuple
 
 import numpy as np
@@ -23,7 +24,8 @@ class PassphraseAuthError(Exception):
     """PassphraseAuth の基底例外。"""
 
 
-class PassphraseExtractionResult(NamedTuple):
+@dataclass(frozen=True)
+class Passphrase:
     """パスフレーズ抽出結果。"""
 
     embedding: Embedding
@@ -117,7 +119,7 @@ class PassphraseAuth:
         """
         return PassphraseAuthVerifier(self, embedding, phoneme)
 
-    def extract_passphrase(self, audio: AudioInput) -> PassphraseExtractionResult:
+    def extract_passphrase(self, audio: AudioInput) -> Passphrase:
         """音声入力から検証済み埋め込みベクトルと音素列を抽出する。
 
         音声読み込み → VAD → 発話時間チェック → 音素検証 → 埋め込み抽出。
@@ -147,7 +149,7 @@ class PassphraseAuth:
             transcription = ""
             phoneme = Phoneme(values=[])
         embedding = extract_embedding(speech)
-        return PassphraseExtractionResult(
+        return Passphrase(
             embedding=embedding,
             phoneme=phoneme,
             transcription=transcription,
