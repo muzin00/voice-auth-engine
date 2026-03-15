@@ -58,7 +58,7 @@ def validate_audio(
     if len(audio.samples) == 0:
         raise EmptyAudioError("音声サンプルが空です")
 
-    duration_seconds = len(audio.samples) / audio.sample_rate
+    duration_seconds = audio.duration
 
     if duration_seconds < min_seconds:
         raise InsufficientDurationError(duration_seconds, min_seconds)

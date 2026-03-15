@@ -28,6 +28,8 @@ class PassphraseExtractionResult(NamedTuple):
 
     embedding: Embedding
     phoneme: Phoneme
+    transcription: str  # 音声認識による書き起こしテキスト
+    speech_duration: float  # VAD後の発話区間の長さ（秒）
 
 
 class EnrollmentResult(NamedTuple):
@@ -137,13 +139,20 @@ class PassphraseAuth:
         validate_audio(speech, min_seconds=self._min_speech_seconds)
         if self._min_unique_phonemes is not None or self._phoneme_threshold is not None:
             result = transcribe(speech)
+            transcription = result.text
             phoneme = extract_phonemes(result.text)
             if self._min_unique_phonemes is not None:
                 validate_passphrase(phoneme, min_unique_phonemes=self._min_unique_phonemes)
         else:
+            transcription = ""
             phoneme = Phoneme(values=[])
         embedding = extract_embedding(speech)
-        return PassphraseExtractionResult(embedding=embedding, phoneme=phoneme)
+        return PassphraseExtractionResult(
+            embedding=embedding,
+            phoneme=phoneme,
+            transcription=transcription,
+            speech_duration=speech.duration,
+        )
 
     def extract_passphrase_embedding(self, audio: AudioInput) -> Embedding:
         """音声入力から検証済み埋め込みベクトルを抽出する（後方互換）。
