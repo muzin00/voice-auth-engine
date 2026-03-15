@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from voice_auth_engine.math import (
+    cosine_distance,
     cosine_similarity,
     normalized_edit_distance,
     pairwise_distances,
@@ -37,6 +38,27 @@ class TestCosineSimilarity:
         z = np.zeros(3, dtype=np.float32)
         assert cosine_similarity(a, z) == pytest.approx(0.0)
         assert cosine_similarity(z, a) == pytest.approx(0.0)
+
+
+class TestCosineDistance:
+    """cosine_distance のテスト。"""
+
+    def test_identical_vectors(self) -> None:
+        """同一ベクトル → 0.0。"""
+        v = np.array([1.0, 2.0, 3.0], dtype=np.float32)
+        assert cosine_distance(v, v) == pytest.approx(0.0, abs=1e-6)
+
+    def test_orthogonal_vectors(self) -> None:
+        """直交ベクトル → 1.0。"""
+        a = np.array([1.0, 0.0], dtype=np.float32)
+        b = np.array([0.0, 1.0], dtype=np.float32)
+        assert cosine_distance(a, b) == pytest.approx(1.0)
+
+    def test_opposite_vectors(self) -> None:
+        """逆向きベクトル → 2.0。"""
+        a = np.array([1.0, 2.0, 3.0], dtype=np.float32)
+        b = np.array([-1.0, -2.0, -3.0], dtype=np.float32)
+        assert cosine_distance(a, b) == pytest.approx(2.0)
 
 
 class TestNormalizedEditDistance:

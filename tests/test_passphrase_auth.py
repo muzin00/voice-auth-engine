@@ -85,12 +85,13 @@ class TestPassphraseAuthEnroller:
         enroller.add_sample(audio)
         result = enroller.enroll()
         np.testing.assert_array_equal(result.embedding.values, [1.0, 0.0, 0.0])
+        assert result.selected_index == 0
 
     @patch("voice_auth_engine.passphrase_auth.load_audio")
     @patch("voice_auth_engine.passphrase_auth.extract_speech")
     @patch("voice_auth_engine.passphrase_auth.detect_speech")
     @patch("voice_auth_engine.passphrase_auth.extract_embedding")
-    def test_enroll_multiple_samples(
+    def test_enroll_multiple_samples_selects_medoid(
         self,
         mock_extract_emb: MagicMock,
         mock_detect: MagicMock,
@@ -98,21 +99,26 @@ class TestPassphraseAuthEnroller:
         mock_load: MagicMock,
         auth: PassphraseAuth,
     ) -> None:
-        """複数サンプルで平均ベクトルが返る。"""
+        """複数サンプルでメドイド（他との距離合計が最小）が選択される。"""
         audio = make_audio(1.0)
         mock_load.return_value = audio
         mock_detect.return_value = make_segments(audio)
         mock_extract_sp.return_value = audio
+        # サンプル0,1は類似、サンプル2は離れている → メドイドはサンプル0
         mock_extract_emb.side_effect = [
             make_embedding([1.0, 0.0, 0.0]),
+            make_embedding([0.9, 0.1, 0.0]),
             make_embedding([0.0, 1.0, 0.0]),
         ]
 
         enroller = auth.create_enroller()
         enroller.add_sample(audio)
         enroller.add_sample(audio)
+        enroller.add_sample(audio)
         result = enroller.enroll()
-        np.testing.assert_array_almost_equal(result.embedding.values, [0.5, 0.5, 0.0])
+        # サンプル1がメドイド（サンプル0,2両方に近い）
+        assert result.selected_index == 1
+        np.testing.assert_array_almost_equal(result.embedding.values, [0.9, 0.1, 0.0])
 
     def test_enroll_no_samples_raises(self, auth: PassphraseAuth) -> None:
         """サンプル未蓄積で ValueError。"""
@@ -166,6 +172,7 @@ class TestPassphraseAuthEnroller:
         result = enroller.enroll()
         assert isinstance(result, EnrollmentResult)
         assert isinstance(result.embedding, Embedding)
+        assert result.selected_index == 0
 
     def test_create_enroller_returns_correct_type(self, auth: PassphraseAuth) -> None:
         """create_enroller が PassphraseAuthEnroller を返す。"""
@@ -363,6 +370,7 @@ class TestPassphraseAuthPhonemes:
         result = enroller.enroll()
         assert isinstance(result, EnrollmentResult)
         assert result.phoneme.values == ["a", "i", "u", "e", "o"]
+        assert result.selected_index in range(3)
 
     @patch("voice_auth_engine.passphrase_auth.extract_phonemes")
     @patch("voice_auth_engine.passphrase_auth.transcribe")
@@ -429,6 +437,7 @@ class TestPassphraseAuthPhonemes:
         enroller.add_sample(audio)
         result = enroller.enroll()
         assert result.phoneme.values == []
+        assert result.selected_index == 0
 
 
 class TestPassphraseAuthVerifierPhonemes:

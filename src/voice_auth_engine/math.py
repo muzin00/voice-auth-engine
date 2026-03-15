@@ -32,6 +32,18 @@ def cosine_similarity(
     return float(np.dot(a, b) / (norm_a * norm_b))
 
 
+def cosine_distance(
+    a: npt.NDArray[np.float32],
+    b: npt.NDArray[np.float32],
+) -> float:
+    """2つのベクトルのコサイン距離を計算する。
+
+    Returns:
+        コサイン距離 [0.0, 2.0]。0.0 = 完全一致。
+    """
+    return 1.0 - cosine_similarity(a, b)
+
+
 def normalized_edit_distance(a: Sequence[T], b: Sequence[T]) -> float:
     """2つの系列の正規化編集距離を計算する。
 
@@ -70,19 +82,19 @@ def normalized_edit_distance(a: Sequence[T], b: Sequence[T]) -> float:
 
 
 def pairwise_distances(
-    sequences: Sequence[Sequence[T]],
-    distance_fn: Callable[[Sequence[T], Sequence[T]], float] = normalized_edit_distance,
+    items: Sequence[T],
+    distance_fn: Callable[[T, T], float] = normalized_edit_distance,  # type: ignore[assignment]
 ) -> list[list[float]]:
     """全ペア間の距離行列を計算する。
 
     Returns:
-        n×n の対称行列。distances[i][j] は sequences[i] と sequences[j] の距離。
+        n×n の対称行列。distances[i][j] は items[i] と items[j] の距離。
     """
-    n = len(sequences)
+    n = len(items)
     distances = [[0.0] * n for _ in range(n)]
     for i in range(n):
         for j in range(i + 1, n):
-            d = distance_fn(sequences[i], sequences[j])
+            d = distance_fn(items[i], items[j])
             distances[i][j] = d
             distances[j][i] = d
     return distances

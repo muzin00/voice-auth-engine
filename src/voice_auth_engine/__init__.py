@@ -23,7 +23,7 @@ from voice_auth_engine.embedding_extractor import (
     EmbeddingModelLoadError,
     extract_embedding,
 )
-from voice_auth_engine.math import cosine_similarity, normalized_edit_distance
+from voice_auth_engine.math import cosine_distance, cosine_similarity, normalized_edit_distance
 from voice_auth_engine.model_config import ModelConfig
 from voice_auth_engine.model_downloader import ModelDownloader, ModelDownloadError
 from voice_auth_engine.passphrase_auth import (
@@ -102,6 +102,7 @@ __all__ = [
     "UnsupportedExtensionError",
     "ModelConfig",
     "extract_phonemes",
+    "cosine_distance",
     "cosine_similarity",
     "normalized_edit_distance",
     "detect_speech",

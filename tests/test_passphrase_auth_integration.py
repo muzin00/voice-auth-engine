@@ -131,6 +131,7 @@ class TestPhonemeVerificationIntegration:
 
         assert enroller.sample_count == 3
         assert len(result.phoneme.values) > 0
+        assert result.selected_index in range(3)
 
     def test_same_speaker_same_passphrase_accepted(
         self,

@@ -4,12 +4,16 @@ from __future__ import annotations
 
 from typing import NamedTuple
 
-import numpy as np
-
 from voice_auth_engine.audio_preprocessor import AudioInput, load_audio
 from voice_auth_engine.audio_validator import validate_audio
 from voice_auth_engine.embedding_extractor import Embedding, extract_embedding
-from voice_auth_engine.math import cosine_similarity, normalized_edit_distance
+from voice_auth_engine.math import (
+    cosine_distance,
+    cosine_similarity,
+    normalized_edit_distance,
+    pairwise_distances,
+    select_medoid,
+)
 from voice_auth_engine.passphrase_validator import (
     validate_passphrase,
     validate_phoneme_consistency,
@@ -37,6 +41,7 @@ class EnrollmentResult(NamedTuple):
 
     embedding: Embedding
     phoneme: Phoneme  # 基準音素（メドイドで決定）
+    selected_index: int  # 選択されたサンプルのインデックス（add_sample の順序）
 
 
 class VerificationResult(NamedTuple):
@@ -174,7 +179,7 @@ class PassphraseAuth:
 class PassphraseAuthEnroller:
     """声紋登録 (Enroller)。
 
-    音声サンプルを蓄積し、平均埋め込みベクトルと基準音素列を算出する。
+    音声サンプルを蓄積し、最適な1サンプル（メドイド）を選択する。
     ``PassphraseAuth.create_enroller()`` から生成する。
     """
 
@@ -199,7 +204,9 @@ class PassphraseAuthEnroller:
         self._phoneme_samples.append(result.phoneme)
 
     def enroll(self) -> EnrollmentResult:
-        """蓄積サンプルの平均埋め込みベクトルと基準音素列を返す。
+        """蓄積サンプルからメドイド（最適な1サンプル）を選択して返す。
+
+        embedding のコサイン距離に基づくメドイドを選択する。
 
         Raises:
             ValueError: サンプルが蓄積されていない場合。
@@ -207,8 +214,15 @@ class PassphraseAuthEnroller:
         """
         if not self._embeddings:
             raise ValueError("サンプルが蓄積されていません")
-        mean_values = np.mean([e.values for e in self._embeddings], axis=0)
-        embedding = Embedding(values=mean_values)
+        if len(self._embeddings) == 1:
+            selected_index = 0
+        else:
+            distances = pairwise_distances(
+                [e.values for e in self._embeddings],
+                distance_fn=cosine_distance,
+            )
+            selected_index = select_medoid(distances)
+        embedding = self._embeddings[selected_index]
         if self._auth._phoneme_threshold is not None:
             validate_phoneme_consistency(
                 self._phoneme_samples, threshold=self._auth._phoneme_threshold
@@ -216,7 +230,7 @@ class PassphraseAuthEnroller:
             phoneme = Phoneme.select_reference(self._phoneme_samples)
         else:
             phoneme = Phoneme(values=[])
-        return EnrollmentResult(embedding=embedding, phoneme=phoneme)
+        return EnrollmentResult(embedding=embedding, phoneme=phoneme, selected_index=selected_index)
 
     @property
     def sample_count(self) -> int:
