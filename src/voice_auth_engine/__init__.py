@@ -27,7 +27,6 @@ from voice_auth_engine.math import cosine_similarity, normalized_edit_distance
 from voice_auth_engine.model_config import ModelConfig
 from voice_auth_engine.model_downloader import ModelDownloader, ModelDownloadError
 from voice_auth_engine.passphrase_auth import (
-    EnrollmentResult,
     Passphrase,
     PassphraseAuth,
     PassphraseAuthError,
@@ -74,7 +73,6 @@ __all__ = [
     "EmbeddingModelLoadError",
     "EmptyAudioError",
     "EmptyPassphraseError",
-    "EnrollmentResult",
     "ModelDownloadError",
     "ModelDownloader",
     "InsufficientDurationError",
