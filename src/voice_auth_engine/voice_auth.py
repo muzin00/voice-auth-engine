@@ -1,4 +1,4 @@
-"""パスフレーズ方式の話者認証。"""
+"""話者認証。"""
 
 from __future__ import annotations
 
@@ -23,8 +23,8 @@ from voice_auth_engine.speech_detector import detect_speech, extract_speech
 from voice_auth_engine.speech_recognizer import transcribe
 
 
-class PassphraseAuthError(Exception):
-    """PassphraseAuth の基底例外。"""
+class VoiceAuthError(Exception):
+    """VoiceAuth の基底例外。"""
 
 
 @dataclass(frozen=True)
@@ -46,15 +46,15 @@ class VerificationResult(NamedTuple):
     passphrase_score: float | None = None  # 正規化編集距離 [0.0, 1.0]
 
 
-class PassphraseAuth:
-    """パスフレーズ方式の話者認証。
+class VoiceAuth:
+    """話者認証。
 
     音声読み込み → VAD → 発話時間チェック → 音素検証 → 埋め込み抽出の
     パイプラインと、選択・照合メソッドを提供する。
 
     使用例::
 
-        auth = PassphraseAuth(threshold=0.5)
+        auth = VoiceAuth(threshold=0.5)
 
         # 登録
         passphrases = [auth.extract_passphrase(a) for a in audios]

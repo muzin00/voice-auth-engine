@@ -1,4 +1,4 @@
-"""passphrase_auth モジュールの統合テスト（実音声）。"""
+"""voice_auth モジュールの統合テスト（実音声）。"""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 
 from voice_auth_engine.audio_validator import EmptyAudioError, InsufficientDurationError
-from voice_auth_engine.passphrase_auth import Passphrase, PassphraseAuth
 from voice_auth_engine.passphrase_validator import PhonemeConsistencyError
+from voice_auth_engine.voice_auth import Passphrase, VoiceAuth
 
 from .audio_factory import generate_silence_samples, make_audio_data
 
@@ -16,15 +16,15 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 
 @pytest.fixture
-def auth() -> PassphraseAuth:
-    """統合テスト用 PassphraseAuth。"""
-    return PassphraseAuth(threshold=0.8)
+def auth() -> VoiceAuth:
+    """統合テスト用 VoiceAuth。"""
+    return VoiceAuth(threshold=0.8)
 
 
-class TestPassphraseAuthIntegration:
+class TestVoiceAuthIntegration:
     """実音声を使ったパスフレーズ認証の統合テスト。"""
 
-    def test_enroll_and_verify_same_speaker(self, auth: PassphraseAuth) -> None:
+    def test_enroll_and_verify_same_speaker(self, auth: VoiceAuth) -> None:
         """登録→本人認証で accepted=True。"""
         passphrases = [auth.extract_passphrase(FIXTURES_DIR / "speaker_a_enroll.mp3")]
         selected, _ = auth.select_passphrase(passphrases)
@@ -38,7 +38,7 @@ class TestPassphraseAuthIntegration:
         "other_speaker",
         ["speaker_b_verify.mp3", "speaker_c_verify.mp3", "speaker_d_verify.mp3"],
     )
-    def test_reject_different_speaker(self, auth: PassphraseAuth, other_speaker: str) -> None:
+    def test_reject_different_speaker(self, auth: VoiceAuth, other_speaker: str) -> None:
         """登録→他人認証で accepted=False。"""
         passphrases = [auth.extract_passphrase(FIXTURES_DIR / "speaker_a_enroll.mp3")]
         selected, _ = auth.select_passphrase(passphrases)
@@ -53,7 +53,7 @@ class TestPassphraseAuthIntegration:
         ["speaker_b_verify.mp3", "speaker_c_verify.mp3", "speaker_d_verify.mp3"],
     )
     def test_same_speaker_score_higher_than_different_speaker(
-        self, auth: PassphraseAuth, other_speaker: str
+        self, auth: VoiceAuth, other_speaker: str
     ) -> None:
         """本人のスコアが他人のスコアより高い。"""
         passphrases = [auth.extract_passphrase(FIXTURES_DIR / "speaker_a_enroll.mp3")]
@@ -65,7 +65,7 @@ class TestPassphraseAuthIntegration:
         diff_result = auth.verify_passphrase(diff_passphrase, selected)
         assert same_result.voiceprint_score > diff_result.voiceprint_score
 
-    def test_embedding_serialization_roundtrip(self, auth: PassphraseAuth) -> None:
+    def test_embedding_serialization_roundtrip(self, auth: VoiceAuth) -> None:
         """埋め込みベクトルのシリアライズ→デシリアライズ後も認証可能。"""
         from voice_auth_engine.embedding_extractor import Embedding
 
@@ -83,7 +83,7 @@ class TestPassphraseAuthIntegration:
         result = auth.verify_passphrase(passphrase, restored_enrolled)
         assert result.voiceprint_accepted is True
 
-    def test_silence_raises_empty_audio_error(self, auth: PassphraseAuth) -> None:
+    def test_silence_raises_empty_audio_error(self, auth: VoiceAuth) -> None:
         """無音音声で EmptyAudioError が発生する。"""
         silence = make_audio_data(generate_silence_samples(duration=5.0))
         with pytest.raises(EmptyAudioError):
@@ -91,7 +91,7 @@ class TestPassphraseAuthIntegration:
 
     def test_short_speech_raises_insufficient_duration_error(
         self,
-        auth: PassphraseAuth,
+        auth: VoiceAuth,
     ) -> None:
         """発話時間が短い音声で InsufficientDurationError が発生する。"""
         with pytest.raises(InsufficientDurationError):
@@ -99,9 +99,9 @@ class TestPassphraseAuthIntegration:
 
 
 @pytest.fixture
-def phoneme_auth() -> PassphraseAuth:
-    """音素照合を有効にした統合テスト用 PassphraseAuth。"""
-    return PassphraseAuth(threshold=0.8, phoneme_threshold=0.3)
+def phoneme_auth() -> VoiceAuth:
+    """音素照合を有効にした統合テスト用 VoiceAuth。"""
+    return VoiceAuth(threshold=0.8, phoneme_threshold=0.3)
 
 
 class TestPhonemeVerificationIntegration:
@@ -109,7 +109,7 @@ class TestPhonemeVerificationIntegration:
 
     def test_select_with_phoneme_threshold(
         self,
-        phoneme_auth: PassphraseAuth,
+        phoneme_auth: VoiceAuth,
     ) -> None:
         """phoneme_threshold 有効で選択すると phonemes を含む Passphrase が返る。"""
         passphrases = [
@@ -123,7 +123,7 @@ class TestPhonemeVerificationIntegration:
 
     def test_select_three_samples(
         self,
-        phoneme_auth: PassphraseAuth,
+        phoneme_auth: VoiceAuth,
     ) -> None:
         """3サンプルで medoid が選択される。"""
         passphrases = [
@@ -138,7 +138,7 @@ class TestPhonemeVerificationIntegration:
 
     def test_same_speaker_same_passphrase_accepted(
         self,
-        phoneme_auth: PassphraseAuth,
+        phoneme_auth: VoiceAuth,
     ) -> None:
         """本人+同一パスフレーズで accepted=True, passphrase_accepted=True。"""
         passphrases = [
@@ -158,7 +158,7 @@ class TestPhonemeVerificationIntegration:
 
     def test_same_speaker_different_passphrase_rejected(
         self,
-        phoneme_auth: PassphraseAuth,
+        phoneme_auth: VoiceAuth,
     ) -> None:
         """本人+異なるパスフレーズで accepted=False（話者OK, 音素NG）。"""
         passphrases = [
@@ -176,7 +176,7 @@ class TestPhonemeVerificationIntegration:
 
     def test_different_speaker_same_passphrase_rejected(
         self,
-        phoneme_auth: PassphraseAuth,
+        phoneme_auth: VoiceAuth,
     ) -> None:
         """他人+同一パスフレーズで accepted=False（話者NG, 音素OK）。"""
         passphrases = [
@@ -194,7 +194,7 @@ class TestPhonemeVerificationIntegration:
 
     def test_inconsistent_passphrases_raises_error(
         self,
-        phoneme_auth: PassphraseAuth,
+        phoneme_auth: VoiceAuth,
     ) -> None:
         """異なるパスフレーズで登録すると PhonemeConsistencyError。"""
         passphrases = [
