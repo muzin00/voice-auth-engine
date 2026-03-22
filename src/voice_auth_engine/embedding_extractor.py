@@ -36,6 +36,11 @@ class Embedding(NamedTuple):
         return self.values.tobytes()
 
     @staticmethod
+    def from_floats(values: list[float]) -> Embedding:
+        """float のリストから埋め込みベクトルを生成する。"""
+        return Embedding(values=np.array(values, dtype=np.float32))
+
+    @staticmethod
     def from_bytes(data: bytes) -> Embedding:
         """バイト列から埋め込みベクトルを復元する。"""
         return Embedding(values=np.frombuffer(data, dtype=np.float32).copy())
