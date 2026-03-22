@@ -26,12 +26,6 @@ from voice_auth_engine.embedding_extractor import (
 from voice_auth_engine.math import cosine_similarity, normalized_edit_distance
 from voice_auth_engine.model_config import ModelConfig
 from voice_auth_engine.model_downloader import ModelDownloader, ModelDownloadError
-from voice_auth_engine.passphrase_auth import (
-    Passphrase,
-    PassphraseAuth,
-    PassphraseAuthError,
-    VerificationResult,
-)
 from voice_auth_engine.passphrase_validator import (
     EmptyPassphraseError,
     InsufficientPhonemeError,
@@ -59,6 +53,12 @@ from voice_auth_engine.speech_recognizer import (
     TranscriptionResult,
     transcribe,
 )
+from voice_auth_engine.voice_auth import (
+    Passphrase,
+    VerificationResult,
+    VoiceAuth,
+    VoiceAuthError,
+)
 
 __all__ = [
     "AudioData",
@@ -77,8 +77,8 @@ __all__ = [
     "ModelDownloader",
     "InsufficientDurationError",
     "InsufficientPhonemeError",
-    "PassphraseAuth",
-    "PassphraseAuthError",
+    "VoiceAuth",
+    "VoiceAuthError",
     "PhonemeConsistencyError",
     "Passphrase",
     "VerificationResult",
