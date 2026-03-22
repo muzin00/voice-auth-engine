@@ -4,11 +4,9 @@ from __future__ import annotations
 
 from typing import NamedTuple, TypedDict
 
-import numpy as np
-
 from voice_auth_engine.audio_preprocessor import AudioInput, load_audio
 from voice_auth_engine.audio_validator import validate_audio
-from voice_auth_engine.embedding_extractor import extract_embedding
+from voice_auth_engine.embedding_extractor import Embedding, extract_embedding
 from voice_auth_engine.math import (
     cosine_distance_matrix,
     cosine_similarity,
@@ -129,7 +127,7 @@ class VoiceAuth:
             validate_phoneme_consistency(phoneme_samples, threshold=self._phoneme_threshold)
         if len(voices) == 1:
             return voices[0], 0
-        vectors = [np.array(v["embedding_values"], dtype=np.float32) for v in voices]
+        vectors = [Embedding.from_floats(v["embedding_values"]).values for v in voices]
         distances = cosine_distance_matrix(vectors)
         index = select_medoid(distances)
         return voices[index], index
@@ -145,9 +143,9 @@ class VoiceAuth:
             target: 認証対象の音声入力。
             reference: 登録済みの音声入力。
         """
-        ref_emb = np.array(reference["embedding_values"], dtype=np.float32)
-        tgt_emb = np.array(target["embedding_values"], dtype=np.float32)
-        score = cosine_similarity(ref_emb, tgt_emb)
+        target_embedding = Embedding.from_floats(target["embedding_values"])
+        reference_embedding = Embedding.from_floats(reference["embedding_values"])
+        score = cosine_similarity(reference_embedding.values, target_embedding.values)
         speaker_accepted = score >= self._threshold
 
         if self._phoneme_threshold is not None:
