@@ -1,4 +1,4 @@
-"""日本語パスフレーズの音素多様性バリデーション。"""
+"""日本語音素の多様性バリデーション。"""
 
 from __future__ import annotations
 
@@ -10,15 +10,15 @@ if TYPE_CHECKING:
     from voice_auth_engine.phoneme_extractor import Phoneme
 
 
-class PassphraseValidationError(Exception):
-    """パスフレーズバリデーションの基底例外。"""
+class PhonemeValidationError(Exception):
+    """音素バリデーションの基底例外。"""
 
 
-class EmptyPassphraseError(PassphraseValidationError):
-    """パスフレーズが空。"""
+class EmptyPhonemeError(PhonemeValidationError):
+    """音素が空。"""
 
 
-class InsufficientPhonemeError(PassphraseValidationError):
+class InsufficientPhonemeError(PhonemeValidationError):
     """ユニーク音素数が不足。"""
 
     def __init__(self, phoneme: Phoneme, min_required: int) -> None:
@@ -27,11 +27,11 @@ class InsufficientPhonemeError(PassphraseValidationError):
         super().__init__(f"ユニーク音素数が不足しています: {phoneme.unique_count} < {min_required}")
 
 
-class PhonemeConsistencyError(PassphraseValidationError):
+class PhonemeConsistencyError(PhonemeValidationError):
     """音素列の整合性チェック失敗。"""
 
 
-def validate_passphrase(phoneme: Phoneme, *, min_unique_phonemes: int) -> None:
+def validate_phoneme(phoneme: Phoneme, *, min_unique_phonemes: int) -> None:
     """音素解析結果のユニーク音素数を検証する。
 
     Args:

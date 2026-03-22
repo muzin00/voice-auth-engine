@@ -26,17 +26,17 @@ from voice_auth_engine.embedding_extractor import (
 from voice_auth_engine.math import cosine_similarity, normalized_edit_distance
 from voice_auth_engine.model_config import ModelConfig
 from voice_auth_engine.model_downloader import ModelDownloader, ModelDownloadError
-from voice_auth_engine.passphrase_validator import (
-    EmptyPassphraseError,
-    InsufficientPhonemeError,
-    PassphraseValidationError,
-    PhonemeConsistencyError,
-    validate_passphrase,
-    validate_phoneme_consistency,
-)
 from voice_auth_engine.phoneme_extractor import (
     Phoneme,
     extract_phonemes,
+)
+from voice_auth_engine.phoneme_validator import (
+    EmptyPhonemeError,
+    InsufficientPhonemeError,
+    PhonemeConsistencyError,
+    PhonemeValidationError,
+    validate_phoneme,
+    validate_phoneme_consistency,
 )
 from voice_auth_engine.speech_detector import (
     SpeechDetectorError,
@@ -73,7 +73,7 @@ __all__ = [
     "EmbeddingExtractorError",
     "EmbeddingModelLoadError",
     "EmptyAudioError",
-    "EmptyPassphraseError",
+    "EmptyPhonemeError",
     "ModelDownloadError",
     "ModelDownloader",
     "InsufficientDurationError",
@@ -85,7 +85,7 @@ __all__ = [
     "VoiceInput",
     "VerificationResult",
     "Phoneme",
-    "PassphraseValidationError",
+    "PhonemeValidationError",
     "RecognitionError",
     "RecognizerModelLoadError",
     "SpeechDetectorError",
@@ -108,6 +108,6 @@ __all__ = [
     "transcribe",
     "validate_audio",
     "validate_extension",
-    "validate_passphrase",
+    "validate_phoneme",
     "validate_phoneme_consistency",
 ]

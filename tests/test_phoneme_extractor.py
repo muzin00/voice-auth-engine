@@ -2,11 +2,11 @@
 
 import pytest
 
-from voice_auth_engine.passphrase_validator import EmptyPassphraseError
 from voice_auth_engine.phoneme_extractor import (
     Phoneme,
     extract_phonemes,
 )
+from voice_auth_engine.phoneme_validator import EmptyPhonemeError
 
 
 class TestExtractPhonemes:
@@ -35,11 +35,11 @@ class TestExtractPhonemes:
         assert "cl" not in phoneme.values
 
     def test_empty_string_raises_error(self) -> None:
-        """空文字で EmptyPassphraseError が発生する。"""
-        with pytest.raises(EmptyPassphraseError):
+        """空文字で EmptyPhonemeError が発生する。"""
+        with pytest.raises(EmptyPhonemeError):
             extract_phonemes("")
 
     def test_whitespace_only_raises_error(self) -> None:
-        """空白のみで EmptyPassphraseError が発生する。"""
-        with pytest.raises(EmptyPassphraseError):
+        """空白のみで EmptyPhonemeError が発生する。"""
+        with pytest.raises(EmptyPhonemeError):
             extract_phonemes("   ")

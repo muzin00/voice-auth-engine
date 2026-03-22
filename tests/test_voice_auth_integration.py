@@ -9,7 +9,7 @@ import pytest
 
 from voice_auth_engine.audio_validator import EmptyAudioError, InsufficientDurationError
 from voice_auth_engine.embedding_extractor import Embedding
-from voice_auth_engine.passphrase_validator import PhonemeConsistencyError
+from voice_auth_engine.phoneme_validator import PhonemeConsistencyError
 from voice_auth_engine.voice_auth import ExtractionResult, VoiceAuth, VoiceInput
 
 from .audio_factory import generate_silence_samples, make_audio_data
@@ -113,7 +113,7 @@ def phoneme_auth() -> VoiceAuth:
 
 
 class TestPhonemeVerificationIntegration:
-    """音素ベースのパスフレーズ照合の統合テスト。"""
+    """音素ベースの照合の統合テスト。"""
 
     def test_select_with_phoneme_threshold(
         self,
@@ -144,11 +144,11 @@ class TestPhonemeVerificationIntegration:
         assert len(selected["phoneme_values"]) > 0
         assert 0 <= index <= 2
 
-    def test_same_speaker_same_passphrase_accepted(
+    def test_same_speaker_same_phoneme_accepted(
         self,
         phoneme_auth: VoiceAuth,
     ) -> None:
-        """本人+同一パスフレーズで accepted=True, passphrase_accepted=True。"""
+        """本人+同一音素で accepted=True, phoneme_accepted=True。"""
         voices = [
             _to_voice_input(phoneme_auth.extract_audio(FIXTURES_DIR / "speaker_a_phrase_a_1.mp3")),
             _to_voice_input(phoneme_auth.extract_audio(FIXTURES_DIR / "speaker_a_phrase_a_2.mp3")),
@@ -161,16 +161,16 @@ class TestPhonemeVerificationIntegration:
         result = phoneme_auth.verify_voice(target, selected)
 
         assert result.voiceprint_accepted is True
-        assert result.passphrase_accepted is True
-        assert result.passphrase_score is not None
+        assert result.phoneme_accepted is True
+        assert result.phoneme_score is not None
         assert phoneme_auth._phoneme_threshold is not None
-        assert result.passphrase_score <= phoneme_auth._phoneme_threshold
+        assert result.phoneme_score <= phoneme_auth._phoneme_threshold
 
-    def test_same_speaker_different_passphrase_rejected(
+    def test_same_speaker_different_phoneme_rejected(
         self,
         phoneme_auth: VoiceAuth,
     ) -> None:
-        """本人+異なるパスフレーズで accepted=False（話者OK, 音素NG）。"""
+        """本人+異なる音素で accepted=False（話者OK, 音素NG）。"""
         voices = [
             _to_voice_input(phoneme_auth.extract_audio(FIXTURES_DIR / "speaker_a_phrase_a_1.mp3")),
             _to_voice_input(phoneme_auth.extract_audio(FIXTURES_DIR / "speaker_a_phrase_a_2.mp3")),
@@ -184,13 +184,13 @@ class TestPhonemeVerificationIntegration:
 
         assert result.voiceprint_accepted is False
         assert result.voiceprint_score >= phoneme_auth.threshold  # 話者は本人
-        assert result.passphrase_accepted is False  # 音素が不一致
+        assert result.phoneme_accepted is False  # 音素が不一致
 
-    def test_different_speaker_same_passphrase_rejected(
+    def test_different_speaker_same_phoneme_rejected(
         self,
         phoneme_auth: VoiceAuth,
     ) -> None:
-        """他人+同一パスフレーズで accepted=False（話者NG, 音素OK）。"""
+        """他人+同一音素で accepted=False（話者NG, 音素OK）。"""
         voices = [
             _to_voice_input(phoneme_auth.extract_audio(FIXTURES_DIR / "speaker_a_phrase_a_1.mp3")),
             _to_voice_input(phoneme_auth.extract_audio(FIXTURES_DIR / "speaker_a_phrase_a_2.mp3")),
@@ -204,13 +204,13 @@ class TestPhonemeVerificationIntegration:
 
         assert result.voiceprint_accepted is False
         assert result.voiceprint_score < phoneme_auth.threshold  # 話者が異なる
-        assert result.passphrase_accepted is True  # 音素は一致
+        assert result.phoneme_accepted is True  # 音素は一致
 
-    def test_inconsistent_passphrases_raises_error(
+    def test_inconsistent_phonemes_raises_error(
         self,
         phoneme_auth: VoiceAuth,
     ) -> None:
-        """異なるパスフレーズで登録すると PhonemeConsistencyError。"""
+        """異なる音素で登録すると PhonemeConsistencyError。"""
         voices = [
             _to_voice_input(phoneme_auth.extract_audio(FIXTURES_DIR / "speaker_a_phrase_a_1.mp3")),
             _to_voice_input(phoneme_auth.extract_audio(FIXTURES_DIR / "speaker_a_phrase_b.mp3")),
