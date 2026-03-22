@@ -13,11 +13,11 @@ from voice_auth_engine.math import (
     normalized_edit_distance,
     select_medoid,
 )
-from voice_auth_engine.passphrase_validator import (
-    validate_passphrase,
+from voice_auth_engine.phoneme_extractor import Phoneme, extract_phonemes
+from voice_auth_engine.phoneme_validator import (
+    validate_phoneme,
     validate_phoneme_consistency,
 )
-from voice_auth_engine.phoneme_extractor import Phoneme, extract_phonemes
 from voice_auth_engine.speech_detector import detect_speech, extract_speech
 from voice_auth_engine.speech_recognizer import transcribe
 
@@ -47,8 +47,8 @@ class VerificationResult(NamedTuple):
 
     voiceprint_accepted: bool  # 受理/拒否
     voiceprint_score: float  # コサイン類似度 [-1.0, 1.0]
-    passphrase_accepted: bool | None = None  # 音素照合の受理/拒否
-    passphrase_score: float | None = None  # 正規化編集距離 [0.0, 1.0]
+    phoneme_accepted: bool | None = None  # 音素照合の受理/拒否
+    phoneme_score: float | None = None  # 正規化編集距離 [0.0, 1.0]
 
 
 class VoiceAuth:
@@ -149,16 +149,16 @@ class VoiceAuth:
         speaker_accepted = score >= self._threshold
 
         if self._phoneme_threshold is not None:
-            passphrase_score = normalized_edit_distance(
+            phoneme_score = normalized_edit_distance(
                 reference["phoneme_values"], target["phoneme_values"]
             )
-            passphrase_accepted = passphrase_score <= self._phoneme_threshold
-            voiceprint_accepted = speaker_accepted and passphrase_accepted
+            phoneme_accepted = phoneme_score <= self._phoneme_threshold
+            voiceprint_accepted = speaker_accepted and phoneme_accepted
             return VerificationResult(
                 voiceprint_accepted=voiceprint_accepted,
                 voiceprint_score=score,
-                passphrase_score=passphrase_score,
-                passphrase_accepted=passphrase_accepted,
+                phoneme_score=phoneme_score,
+                phoneme_accepted=phoneme_accepted,
             )
 
         return VerificationResult(voiceprint_accepted=speaker_accepted, voiceprint_score=score)
@@ -188,7 +188,7 @@ class VoiceAuth:
             transcription_text = result.text
             phoneme = extract_phonemes(result.text)
             if self._min_unique_phonemes is not None:
-                validate_passphrase(phoneme, min_unique_phonemes=self._min_unique_phonemes)
+                validate_phoneme(phoneme, min_unique_phonemes=self._min_unique_phonemes)
         else:
             transcription_text = ""
             phoneme = Phoneme(values=[])

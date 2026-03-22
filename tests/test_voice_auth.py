@@ -9,8 +9,8 @@ import pytest
 
 from voice_auth_engine.audio_preprocessor import AudioData
 from voice_auth_engine.audio_validator import EmptyAudioError
-from voice_auth_engine.passphrase_validator import PhonemeConsistencyError
 from voice_auth_engine.phoneme_extractor import Phoneme
+from voice_auth_engine.phoneme_validator import PhonemeConsistencyError
 from voice_auth_engine.voice_auth import (
     ExtractionResult,
     VoiceAuth,
@@ -391,8 +391,8 @@ class TestVerifyPhonemes:
         result = auth_with_phoneme_gate.verify_voice(target, reference)
 
         assert result.voiceprint_accepted is True
-        assert result.passphrase_accepted is True
-        assert result.passphrase_score == pytest.approx(0.0)
+        assert result.phoneme_accepted is True
+        assert result.phoneme_score == pytest.approx(0.0)
 
     def test_phoneme_mismatch_rejected(
         self,
@@ -411,9 +411,9 @@ class TestVerifyPhonemes:
         result = auth_with_phoneme_gate.verify_voice(target, reference)
 
         assert result.voiceprint_accepted is False
-        assert result.passphrase_accepted is False
-        assert result.passphrase_score is not None
-        assert result.passphrase_score > 0.3
+        assert result.phoneme_accepted is False
+        assert result.phoneme_score is not None
+        assert result.phoneme_score > 0.3
 
     def test_speaker_mismatch_with_phoneme_match_rejected(
         self,
@@ -432,10 +432,10 @@ class TestVerifyPhonemes:
         result = auth_with_phoneme_gate.verify_voice(target, reference)
 
         assert result.voiceprint_accepted is False
-        assert result.passphrase_accepted is True
+        assert result.phoneme_accepted is True
         assert result.voiceprint_score == pytest.approx(0.0)
 
-    def test_no_phoneme_threshold_skips_passphrase_check(self, auth: VoiceAuth) -> None:
+    def test_no_phoneme_threshold_skips_phoneme_check(self, auth: VoiceAuth) -> None:
         """phoneme_threshold=None で音素照合無効。"""
         reference: VoiceInput = {
             "embedding_values": list(make_embedding([1.0, 0.0, 0.0]).values),
@@ -449,8 +449,8 @@ class TestVerifyPhonemes:
         result = auth.verify_voice(target, reference)
 
         assert result.voiceprint_accepted is True
-        assert result.passphrase_score is None
-        assert result.passphrase_accepted is None
+        assert result.phoneme_score is None
+        assert result.phoneme_accepted is None
 
 
 class TestExtract:
