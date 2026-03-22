@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import NamedTuple
+from typing import NamedTuple, TypedDict
+
+import numpy as np
 
 from voice_auth_engine.audio_preprocessor import AudioInput, load_audio
 from voice_auth_engine.audio_validator import validate_audio
-from voice_auth_engine.embedding_extractor import Embedding, extract_embedding
+from voice_auth_engine.embedding_extractor import extract_embedding
 from voice_auth_engine.math import (
     cosine_distance_matrix,
     cosine_similarity,
@@ -27,14 +28,20 @@ class VoiceAuthError(Exception):
     """VoiceAuth の基底例外。"""
 
 
-@dataclass(frozen=True)
-class Passphrase:
-    """パスフレーズ抽出結果。"""
+class VoiceInput(TypedDict):
+    """select_best_voice / verify の入力型。"""
 
-    embedding: Embedding
-    phoneme: Phoneme
-    transcription: str  # 音声認識による書き起こしテキスト
-    speech_duration: float  # VAD後の発話区間の長さ（秒）
+    embedding_values: list[float]
+    phoneme_values: list[str]
+
+
+class ExtractionResult(TypedDict):
+    """extract の戻り値型。"""
+
+    embedding_values: list[float]
+    phoneme_values: list[str]
+    transcription: str
+    speech_duration: float
 
 
 class VerificationResult(NamedTuple):
@@ -57,15 +64,18 @@ class VoiceAuth:
         auth = VoiceAuth(threshold=0.5)
 
         # 登録
-        passphrases = [auth.extract_passphrase(a) for a in audios]
-        selected, index = auth.select_passphrase(passphrases)
-        saved = selected.embedding.to_bytes()
+        results = [auth.extract_audio(a) for a in audios]
+        voices = [{"embedding_values": r["embedding_values"],
+                    "phoneme_values": r["phoneme_values"]} for r in results]
+        selected, index = auth.select_best_voice(voices)
 
         # 認証
-        passphrase = auth.extract_passphrase(audio_bytes)
-        result = auth.verify_passphrase(passphrase, selected)
-        result.voiceprint_accepted  # True/False
-        result.voiceprint_score     # 0.85
+        result = auth.extract_audio(audio_bytes)
+        voice = {"embedding_values": result["embedding_values"],
+                 "phoneme_values": result["phoneme_values"]}
+        verification = auth.verify_voice(voice, selected)
+        verification.voiceprint_accepted  # True/False
+        verification.voiceprint_score     # 0.85
     """
 
     def __init__(
@@ -96,51 +106,53 @@ class VoiceAuth:
         """照合の閾値（コサイン類似度）。"""
         return self._threshold
 
-    def select_passphrase(self, passphrases: list[Passphrase]) -> tuple[Passphrase, int]:
-        """抽出済みパスフレーズから最適な1サンプルを選択する。
+    def select_best_voice(self, voices: list[VoiceInput]) -> tuple[VoiceInput, int]:
+        """入力音声から最適な1サンプルを選択する。
 
         embedding のコサイン距離に基づく medoid 選択で、他サンプルとの距離の
         総和が最小のサンプルを選ぶ。サンプルが1つの場合はそのまま返す。
 
         Args:
-            passphrases: extract_passphrase() で抽出済みのパスフレーズのリスト。
+            voices: 音声入力のリスト。
 
         Returns:
-            選択されたパスフレーズとそのインデックス。
+            選択された音声入力とそのインデックス。
 
         Raises:
-            ValueError: passphrases が空の場合。
+            ValueError: voices が空の場合。
             PhonemeConsistencyError: 音素列の整合性チェックに失敗した場合。
         """
-        if not passphrases:
-            raise ValueError("passphrases が空です")
-        phoneme_samples = [p.phoneme for p in passphrases]
+        if not voices:
+            raise ValueError("voices が空です")
         if self._phoneme_threshold is not None:
+            phoneme_samples = [Phoneme(values=v["phoneme_values"]) for v in voices]
             validate_phoneme_consistency(phoneme_samples, threshold=self._phoneme_threshold)
-        if len(passphrases) == 1:
-            return passphrases[0], 0
-        vectors = [p.embedding.values for p in passphrases]
+        if len(voices) == 1:
+            return voices[0], 0
+        vectors = [np.array(v["embedding_values"], dtype=np.float32) for v in voices]
         distances = cosine_distance_matrix(vectors)
         index = select_medoid(distances)
-        return passphrases[index], index
+        return voices[index], index
 
-    def verify_passphrase(
+    def verify_voice(
         self,
-        passphrase: Passphrase,
-        enrolled: Passphrase,
+        target: VoiceInput,
+        reference: VoiceInput,
     ) -> VerificationResult:
-        """抽出済みパスフレーズを登録済み声紋と照合する。
+        """音声入力を登録済み声紋と照合する。
 
         Args:
-            passphrase: extract_passphrase() で抽出済みのパスフレーズ。
-            enrolled: select_passphrase() で選択された登録済みパスフレーズ。
+            target: 認証対象の音声入力。
+            reference: 登録済みの音声入力。
         """
-        score = cosine_similarity(enrolled.embedding.values, passphrase.embedding.values)
+        ref_emb = np.array(reference["embedding_values"], dtype=np.float32)
+        tgt_emb = np.array(target["embedding_values"], dtype=np.float32)
+        score = cosine_similarity(ref_emb, tgt_emb)
         speaker_accepted = score >= self._threshold
 
         if self._phoneme_threshold is not None:
             passphrase_score = normalized_edit_distance(
-                enrolled.phoneme.values, passphrase.phoneme.values
+                reference["phoneme_values"], target["phoneme_values"]
             )
             passphrase_accepted = passphrase_score <= self._phoneme_threshold
             voiceprint_accepted = speaker_accepted and passphrase_accepted
@@ -153,7 +165,7 @@ class VoiceAuth:
 
         return VerificationResult(voiceprint_accepted=speaker_accepted, voiceprint_score=score)
 
-    def extract_passphrase(self, audio: AudioInput) -> Passphrase:
+    def extract_audio(self, audio: AudioInput) -> ExtractionResult:
         """音声入力から検証済み埋め込みベクトルと音素列を抽出する。
 
         音声読み込み → VAD → 発話時間チェック → 音素検証 → 埋め込み抽出。
@@ -175,17 +187,17 @@ class VoiceAuth:
         validate_audio(speech, min_seconds=self._min_speech_seconds)
         if self._min_unique_phonemes is not None or self._phoneme_threshold is not None:
             result = transcribe(speech)
-            transcription = result.text
+            transcription_text = result.text
             phoneme = extract_phonemes(result.text)
             if self._min_unique_phonemes is not None:
                 validate_passphrase(phoneme, min_unique_phonemes=self._min_unique_phonemes)
         else:
-            transcription = ""
+            transcription_text = ""
             phoneme = Phoneme(values=[])
         embedding = extract_embedding(speech)
-        return Passphrase(
-            embedding=embedding,
-            phoneme=phoneme,
-            transcription=transcription,
+        return ExtractionResult(
+            embedding_values=list(embedding.values),
+            phoneme_values=phoneme.values,
+            transcription=transcription_text,
             speech_duration=speech.duration,
         )

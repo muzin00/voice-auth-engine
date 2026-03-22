@@ -54,10 +54,11 @@ from voice_auth_engine.speech_recognizer import (
     transcribe,
 )
 from voice_auth_engine.voice_auth import (
-    Passphrase,
+    ExtractionResult,
     VerificationResult,
     VoiceAuth,
     VoiceAuthError,
+    VoiceInput,
 )
 
 __all__ = [
@@ -80,7 +81,8 @@ __all__ = [
     "VoiceAuth",
     "VoiceAuthError",
     "PhonemeConsistencyError",
-    "Passphrase",
+    "ExtractionResult",
+    "VoiceInput",
     "VerificationResult",
     "Phoneme",
     "PassphraseValidationError",
